@@ -124,7 +124,8 @@ fn check_configuration(has_errors: &mut bool, has_warnings: &mut bool) {
 
 fn check_updates(has_warnings: &mut bool) {
     println!("Updates:");
-    match check_for_updates() {
+    let repo_info = workhelix_cli_common::RepoInfo::new("workhelix", "peter-hook", "v");
+    match workhelix_cli_common::doctor::check_for_updates(&repo_info, env!("CARGO_PKG_VERSION")) {
         Ok(Some(latest)) => {
             let current = env!("CARGO_PKG_VERSION");
             println!("  ⚠️  Update available: v{latest} (current: v{current})");
@@ -141,43 +142,5 @@ fn check_updates(has_warnings: &mut bool) {
             println!("  ⚠️  Failed to check for updates: {e}");
             *has_warnings = true;
         }
-    }
-}
-
-/// Check for available updates from GitHub releases.
-///
-/// Returns Ok(Some(version)) if update available, Ok(None) if up to date, or Err on network failure.
-///
-/// # Errors
-///
-/// Returns an error if the network request fails or the response cannot be parsed.
-pub fn check_for_updates() -> Result<Option<String>, String> {
-    let client = reqwest::blocking::Client::builder()
-        .user_agent("peter-hook-doctor")
-        .timeout(std::time::Duration::from_secs(5))
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let url = "https://api.github.com/repos/workhelix/peter-hook/releases/latest";
-    let response: serde_json::Value = client
-        .get(url)
-        .send()
-        .map_err(|e| e.to_string())?
-        .json()
-        .map_err(|e| e.to_string())?;
-
-    let tag_name = response["tag_name"]
-        .as_str()
-        .ok_or_else(|| "No tag_name in response".to_string())?;
-
-    let latest = tag_name
-        .trim_start_matches("peter-hook-v")
-        .trim_start_matches('v');
-    let current = env!("CARGO_PKG_VERSION");
-
-    if latest == current {
-        Ok(None)
-    } else {
-        Ok(Some(latest.to_string()))
     }
 }

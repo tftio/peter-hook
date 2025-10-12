@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'peter-hook-v*'
+      - 'v*'
 
 permissions:
   contents: write
@@ -19,13 +19,13 @@ jobs:
         id: version
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
-          VERSION=${TAG_NAME#peter-hook-}
+          VERSION=${TAG_NAME#v}
           echo "version=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "version_number=$VERSION" >> $GITHUB_OUTPUT
       - name: Validate version consistency
         shell: bash
         run: |
-          TAG_VERSION=$(echo "${{ steps.version.outputs.version }}" | sed 's/peter-hook-v//')
+          TAG_VERSION=$(echo "${{ steps.version.outputs.version }}" | sed 's/v//')
           CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
           echo "🏷️  Tag version: $TAG_VERSION"
           echo "📦 Cargo version: $CARGO_VERSION"

@@ -68,7 +68,7 @@ just release major   # 3.0.0 -> 4.0.0
 # 2. Runs all quality gates (tests, audit, deny, pre-commit)
 # 3. Bumps version using versioneer
 # 4. Creates commit: "chore: bump version to X.Y.Z"
-# 5. Creates tag: "peter-hook-vX.Y.Z"
+# 5. Creates tag: "vX.Y.Z"
 # 6. Prompts for confirmation
 # 7. Pushes to GitHub (triggers automated release workflow)
 

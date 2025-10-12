@@ -60,7 +60,7 @@ fn run() -> Result<()> {
             Ok(())
         }
         Commands::Completions { shell } => {
-            peter_hook::completions::generate_completions(shell);
+            workhelix_cli_common::completions::generate_completions::<Cli>(shell);
             Ok(())
         }
         Commands::Doctor => {
@@ -75,8 +75,14 @@ fn run() -> Result<()> {
             force,
             install_dir,
         } => {
-            let exit_code =
-                peter_hook::update::run_update(version.as_deref(), force, install_dir.as_deref());
+            let repo_info = workhelix_cli_common::RepoInfo::new("workhelix", "peter-hook", "v");
+            let exit_code = workhelix_cli_common::update::run_update(
+                &repo_info,
+                env!("CARGO_PKG_VERSION"),
+                version.as_deref(),
+                force,
+                install_dir.as_deref(),
+            );
             if exit_code != 0 {
                 process::exit(exit_code);
             }

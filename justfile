@@ -124,14 +124,14 @@ release level:
 
     # Create tag AFTER commit
     echo "Step 5: Creating git tag..."
-    versioneer tag --tag-format "peter-hook-v{version}"
-    echo "✅ Tag created: peter-hook-v$NEW_VERSION"
+    versioneer tag --tag-format "v{version}"
+    echo "✅ Tag created: v$NEW_VERSION"
     echo ""
 
     # Interactive confirmation
     echo "Ready to push release:"
     echo "  Version: $NEW_VERSION"
-    echo "  Tag: peter-hook-v$NEW_VERSION"
+    echo "  Tag: v$NEW_VERSION"
     echo ""
 
     if [ -t 0 ]; then
@@ -150,7 +150,7 @@ release level:
     git push --tags
     echo "✅ Pushed to remote"
     echo ""
-    echo "🎉 Release complete! Tag peter-hook-v$NEW_VERSION pushed."
+    echo "🎉 Release complete! Tag v$NEW_VERSION pushed."
 
 # Clean build artifacts
 clean:
