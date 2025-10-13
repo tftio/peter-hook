@@ -124,7 +124,7 @@ fn check_configuration(has_errors: &mut bool, has_warnings: &mut bool) {
 
 fn check_updates(has_warnings: &mut bool) {
     println!("Updates:");
-    let repo_info = workhelix_cli_common::RepoInfo::new("workhelix", "peter-hook", "v");
+    let repo_info = workhelix_cli_common::RepoInfo::new("tftio", "peter-hook", "v");
     match workhelix_cli_common::doctor::check_for_updates(&repo_info, env!("CARGO_PKG_VERSION")) {
         Ok(Some(latest)) => {
             let current = env!("CARGO_PKG_VERSION");

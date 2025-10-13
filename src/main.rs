@@ -75,7 +75,7 @@ fn run() -> Result<()> {
             force,
             install_dir,
         } => {
-            let repo_info = workhelix_cli_common::RepoInfo::new("workhelix", "peter-hook", "v");
+            let repo_info = workhelix_cli_common::RepoInfo::new("tftio", "peter-hook", "v");
             let exit_code = workhelix_cli_common::update::run_update(
                 &repo_info,
                 env!("CARGO_PKG_VERSION"),
