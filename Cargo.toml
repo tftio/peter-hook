@@ -6,7 +6,7 @@ rust-version = "1.86.0"
 authors = ["Peter Hook Contributors"]
 description = "A hierarchical git hooks manager for monorepos"
 license = "MIT"
-repository = "https://github.com/example/peter-hook"
+repository = "https://github.com/tftio/peter-hook"
 keywords = ["git", "hooks", "monorepo", "development", "cli"]
 categories = ["development-tools", "command-line-utilities"]
 
