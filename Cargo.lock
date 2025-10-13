@@ -1326,6 +1326,7 @@ dependencies = [
  "serde_json",
  "serial_test",
  "shellexpand",
+ "tempfile",
  "toml",
  "workhelix-cli-common",
 ]
