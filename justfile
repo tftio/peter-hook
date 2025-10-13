@@ -39,108 +39,110 @@ bump-version level:
     fi
 
 # Release workflow - validates and publishes a git tag
-release tag:
+release:
     #!/usr/bin/env bash
     set -euo pipefail
 
     PROJECT_NAME="peter-hook"
 
-    # Validate tag format
-    if [[ ! "{{ tag }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        echo "❌ Invalid tag format: {{ tag }}"
-        echo "Expected format: vX.Y.Z (e.g., v0.1.7)"
-        exit 1
-    fi
-
-    echo "🚀 Validating release tag {{ tag }} for $PROJECT_NAME..."
+    echo "🚀 Starting release workflow for $PROJECT_NAME..."
     echo ""
 
-    # Step 1: Validate tag exists locally
-    echo "Step 1: Checking local tag exists..."
-    if ! git tag -l "{{ tag }}" | grep -q "{{ tag }}"; then
-        echo "❌ Tag {{ tag }} does not exist locally"
-        echo "Create it with: git tag {{ tag }}"
-        echo "Or use versioneer: versioneer tag --tag-format 'v{version}'"
+    # Read current version from VERSION file
+    if [ ! -f VERSION ]; then
+        echo "❌ VERSION file not found"
         exit 1
     fi
-    echo "✅ Tag {{ tag }} exists locally"
+    CURRENT_VERSION=$(cat VERSION)
+    TAG="v$CURRENT_VERSION"
+
+    echo "📋 Release Information:"
+    echo "  Project: $PROJECT_NAME"
+    echo "  Version: $CURRENT_VERSION"
+    echo "  Tag: $TAG"
     echo ""
 
-    # Step 2: Extract version and validate Cargo.toml matches
-    echo "Step 2: Validating version consistency..."
-    TAG_VERSION=$(echo "{{ tag }}" | sed 's/v//')
-    TAG_COMMIT=$(git rev-list -n 1 "{{ tag }}")
-    CARGO_VERSION=$(git show "$TAG_COMMIT:Cargo.toml" | grep '^version = ' | head -1 | sed 's/version = "\(.*\)"/\1/')
-
-    echo "  Tag version: $TAG_VERSION"
-    echo "  Cargo.toml version: $CARGO_VERSION"
-    echo "  Tag commit: ${TAG_COMMIT:0:8}"
-
-    if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
-        echo "❌ Version mismatch: tag {{ tag }} points to commit with Cargo.toml version $CARGO_VERSION"
+    # Invariant 1: Clean repository
+    echo "Step 1: Checking repository is clean..."
+    if ! git diff-index --quiet HEAD --; then
+        echo "❌ Working directory not clean"
+        git status --short
         exit 1
     fi
-    echo "✅ Version consistency verified"
+    echo "✅ Repository is clean"
     echo ""
 
-    # Step 3: Validate tag not on remote
-    echo "Step 3: Checking remote tag status..."
+    # Invariant 2: Local and remote HEAD in sync
+    echo "Step 2: Checking local and remote HEAD are in sync..."
+    git fetch origin main 2>/dev/null || true
+    LOCAL_HEAD=$(git rev-parse HEAD)
+    REMOTE_HEAD=$(git rev-parse origin/main)
+    if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
+        echo "❌ Local HEAD and origin/main are not in sync"
+        echo "  Local:  $LOCAL_HEAD"
+        echo "  Remote: $REMOTE_HEAD"
+        echo "Run: git push origin main"
+        exit 1
+    fi
+    echo "✅ Local and remote HEAD in sync: ${LOCAL_HEAD:0:8}"
+    echo ""
+
+    # Invariant 3: No existing tag for current VERSION
+    echo "Step 3: Checking tag does not exist..."
     git fetch --tags origin 2>/dev/null || true
-    if git ls-remote --tags origin | grep -q "refs/tags/{{ tag }}$"; then
-        echo "❌ Tag {{ tag }} already exists on remote"
-        echo "Remote tags:"
-        git ls-remote --tags origin | grep "{{ tag }}"
+    if git tag -l "$TAG" | grep -q "^$TAG$"; then
+        echo "❌ Tag $TAG already exists locally"
+        git show "$TAG" --no-patch
         exit 1
     fi
-    echo "✅ Tag {{ tag }} not on remote"
-    echo ""
-
-    # Step 4: Validate no GitHub release exists (requires gh CLI)
-    echo "Step 4: Checking GitHub release status..."
-    if command -v gh >/dev/null 2>&1; then
-        if gh release view "{{ tag }}" >/dev/null 2>&1; then
-            echo "❌ GitHub release {{ tag }} already exists"
-            gh release view "{{ tag }}"
-            exit 1
-        fi
-        echo "✅ No GitHub release exists for {{ tag }}"
-    else
-        echo "⚠️  gh CLI not found, skipping GitHub release check"
-        echo "   Install with: brew install gh"
+    if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+        echo "❌ Tag $TAG already exists on remote"
+        exit 1
     fi
+    echo "✅ Tag $TAG does not exist"
     echo ""
 
-    # Step 5: Validate version greater than latest release
-    echo "Step 5: Validating version ordering..."
-    if command -v gh >/dev/null 2>&1; then
-        LATEST_RELEASE=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
-        if [ -n "$LATEST_RELEASE" ]; then
-            LATEST_VERSION=$(echo "$LATEST_RELEASE" | sed 's/v//')
-            echo "  Latest release: $LATEST_RELEASE ($LATEST_VERSION)"
-            echo "  New version: {{ tag }} ($TAG_VERSION)"
-
-            # Simple version comparison (works for semver X.Y.Z)
-            if [ "$TAG_VERSION" = "$LATEST_VERSION" ]; then
-                echo "❌ New version equals latest release version"
-                exit 1
-            fi
-
-            # Note: Full semver comparison would require sort -V or similar
-            # For now, trust developer has bumped correctly
-            echo "✅ Version ordering looks correct"
-        else
-            echo "ℹ️  No previous releases found (first release)"
+    # Invariant 4: No future version tags exist
+    echo "Step 4: Checking no future version tags exist..."
+    FUTURE_TAGS=$(git tag -l 'v*' | sed 's/^v//' | while read ver; do
+        if [ -z "$ver" ]; then continue; fi
+        # Use sort -V for semantic version comparison
+        LATEST=$(printf '%s\n%s' "$CURRENT_VERSION" "$ver" | sort -V | tail -n1)
+        if [ "$LATEST" = "$ver" ] && [ "$ver" != "$CURRENT_VERSION" ]; then
+            echo "$ver"
         fi
-    else
-        echo "⚠️  gh CLI not found, skipping version ordering check"
+    done)
+    if [ -n "$FUTURE_TAGS" ]; then
+        echo "❌ Future version tags exist:"
+        echo "$FUTURE_TAGS" | sed 's/^/  v/'
+        exit 1
     fi
+    echo "✅ No future version tags found"
     echo ""
 
-    # Step 6: Show summary and confirm
+    # Invariant 5: Version consistency
+    echo "Step 5: Validating version consistency..."
+    CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+    echo "  VERSION file: $CURRENT_VERSION"
+    echo "  Cargo.toml:   $CARGO_VERSION"
+    if [ "$CURRENT_VERSION" != "$CARGO_VERSION" ]; then
+        echo "❌ Version mismatch between VERSION and Cargo.toml"
+        exit 1
+    fi
+    echo "✅ Version consistency validated"
+    echo ""
+
+    # Create tag at HEAD
+    echo "Step 6: Creating tag..."
+    git tag -a "$TAG" -m "Release $CURRENT_VERSION"
+    echo "✅ Created tag: $TAG"
+    echo ""
+
+    # Confirm before pushing
     echo "Ready to publish release:"
-    echo "  Tag: {{ tag }}"
-    echo "  Version: $TAG_VERSION"
-    echo "  Commit: ${TAG_COMMIT:0:8}"
+    echo "  Tag: $TAG"
+    echo "  Version: $CURRENT_VERSION"
+    echo "  Commit: ${LOCAL_HEAD:0:8}"
     echo ""
 
     if [ -t 0 ]; then
@@ -148,17 +150,17 @@ release tag:
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             echo "Release cancelled"
-            echo "To push manually: git push origin {{ tag }}"
+            echo "To push manually: git push origin $TAG"
             exit 0
         fi
     fi
 
-    # Step 7: Push tag only
-    echo "Step 6: Pushing tag to remote..."
-    git push origin "{{ tag }}"
+    # Push tag
+    echo "Step 7: Pushing tag to remote..."
+    git push origin "$TAG"
     echo "✅ Tag pushed to remote"
     echo ""
-    echo "🎉 Release {{ tag }} published!"
+    echo "🎉 Release $TAG published!"
     echo ""
     echo "GitHub Actions will now:"
     echo "  1. Create draft release"
