@@ -314,7 +314,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
 dependencies = [
  "lazy_static",
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -323,7 +323,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1309,7 +1309,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "peter-hook"
-version = "3.1.1"
+version = "3.1.9"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2659,8 +2659,9 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 
 [[package]]
 name = "workhelix-cli-common"
-version = "0.1.0"
-source = "git+https://github.com/tftio/workhelix-cli-common?tag=v0.1.0#77ea923e5510184dcc8fd7797221764b64c13422"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "120bd4bf1d60008c57e472c0f9bef32eefa4696a58f42c0b9bd0663cb0558ea9"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2888,7 +2889,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "workhelix-cli-common"
-version = "0.1.2"
