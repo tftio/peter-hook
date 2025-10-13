@@ -25,7 +25,9 @@ jobs:
       - name: Validate version consistency
         shell: bash
         run: |
-          TAG_VERSION=$(echo "${{ steps.version.outputs.version }}" | sed 's/v//')
+          TAG_NAME="${{ steps.version.outputs.version }}"
+          # Strip leading 'v' from tag (e.g., v1.2.3 -> 1.2.3)
+          TAG_VERSION="${TAG_NAME#v}"
           CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
           echo "🏷️  Tag version: $TAG_VERSION"
           echo "📦 Cargo version: $CARGO_VERSION"
@@ -67,7 +69,9 @@ jobs:
       - name: Verify version consistency
         shell: bash
         run: |
-          EXPECTED_VERSION=$(echo "${{ needs.create-release.outputs.version }}" | sed 's/peter-hook-v//')
+          TAG_VERSION="${{ needs.create-release.outputs.version }}"
+          # Strip leading 'v' from tag (e.g., v1.2.3 -> 1.2.3)
+          EXPECTED_VERSION="${TAG_VERSION#v}"
           # Verify the Cargo.toml version matches the tag
           CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
           echo "🏷️  Tag version: $EXPECTED_VERSION"
