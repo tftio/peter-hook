@@ -217,8 +217,8 @@ mod tests {
     fn test_tty_output() {
         let formatter = OutputFormatter { is_tty: true };
 
-        assert_eq!(formatter.status(true), "✓");
-        assert_eq!(formatter.status(false), "✗");
+        assert_eq!(console::strip_ansi_codes(&formatter.status(true)), "✓");
+        assert_eq!(console::strip_ansi_codes(&formatter.status(false)), "✗");
         assert_eq!(formatter.managed_status(true), "🔧 managed");
         assert_eq!(formatter.managed_status(false), "📄 custom");
     }

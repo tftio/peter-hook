@@ -13,7 +13,7 @@ run_always = true
 description = "Check code formatting (matches CI format job)"
 
 [hooks.clippy-check]
-command = ["cargo", "clippy", "--all-targets", "--", "-D", "warnings"]
+command = ["cargo", "clippy", "--locked", "--all-targets", "--", "-D", "warnings"]
 modifies_repository = false
 execution_type = "other"
 run_always = true
@@ -25,7 +25,7 @@ env = { RUSTFLAGS = "-D warnings" }
 # =============================================================================
 
 [hooks.test-all]
-command = ["cargo", "test", "--all", "--verbose"]
+command = ["cargo", "test", "--locked", "--all", "--verbose"]
 modifies_repository = false
 execution_type = "other"
 run_always = true
