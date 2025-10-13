@@ -2,7 +2,8 @@
 //!
 //! This module implements per-file hook resolution where each changed file
 //! finds its nearest hooks.toml and uses that configuration. This enables
-//! monorepo-style setups where different subdirectories have different quality gates.
+//! monorepo-style setups where different subdirectories have different quality
+//! gates.
 
 use crate::{
     config::HookConfig,
@@ -155,9 +156,9 @@ fn resolve_event_for_config(
 
 /// Group changed files by their nearest hooks.toml configuration
 ///
-/// This is the main entry point for hierarchical resolution. For each changed file,
-/// it finds the nearest hooks.toml that defines the requested event, then groups
-/// files that share the same configuration.
+/// This is the main entry point for hierarchical resolution. For each changed
+/// file, it finds the nearest hooks.toml that defines the requested event, then
+/// groups files that share the same configuration.
 ///
 /// # Arguments
 ///

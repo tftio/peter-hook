@@ -233,10 +233,7 @@ fn test_installer_strategies_all_variants() {
 
     for strategy in strategies {
         let result = GitHookInstaller::with_strategy(strategy);
-        assert!(
-            result.is_ok(),
-            "Should create installer with {strategy:?}"
-        );
+        assert!(result.is_ok(), "Should create installer with {strategy:?}");
     }
 
     // Restore directory (ignore error if it doesn't exist)

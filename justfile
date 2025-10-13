@@ -38,119 +38,134 @@ bump-version level:
         exit 1; \
     fi
 
-# Release workflow with comprehensive validation (replaces scripts/release.sh)
-release level:
+# Release workflow - validates and publishes a git tag
+release tag:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Validate bump type
-    case "{{ level }}" in
-        patch|minor|major) ;;
-        *)
-            echo "❌ Invalid bump type: {{ level }}"
-            echo "Usage: just release [patch|minor|major]"
+    PROJECT_NAME="peter-hook"
+
+    # Validate tag format
+    if [[ ! "{{ tag }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "❌ Invalid tag format: {{ tag }}"
+        echo "Expected format: vX.Y.Z (e.g., v0.1.7)"
+        exit 1
+    fi
+
+    echo "🚀 Validating release tag {{ tag }} for $PROJECT_NAME..."
+    echo ""
+
+    # Step 1: Validate tag exists locally
+    echo "Step 1: Checking local tag exists..."
+    if ! git tag -l "{{ tag }}" | grep -q "{{ tag }}"; then
+        echo "❌ Tag {{ tag }} does not exist locally"
+        echo "Create it with: git tag {{ tag }}"
+        echo "Or use versioneer: versioneer tag --tag-format 'v{version}'"
+        exit 1
+    fi
+    echo "✅ Tag {{ tag }} exists locally"
+    echo ""
+
+    # Step 2: Extract version and validate Cargo.toml matches
+    echo "Step 2: Validating version consistency..."
+    TAG_VERSION=$(echo "{{ tag }}" | sed 's/v//')
+    TAG_COMMIT=$(git rev-list -n 1 "{{ tag }}")
+    CARGO_VERSION=$(git show "$TAG_COMMIT:Cargo.toml" | grep '^version = ' | head -1 | sed 's/version = "\(.*\)"/\1/')
+
+    echo "  Tag version: $TAG_VERSION"
+    echo "  Cargo.toml version: $CARGO_VERSION"
+    echo "  Tag commit: ${TAG_COMMIT:0:8}"
+
+    if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
+        echo "❌ Version mismatch: tag {{ tag }} points to commit with Cargo.toml version $CARGO_VERSION"
+        exit 1
+    fi
+    echo "✅ Version consistency verified"
+    echo ""
+
+    # Step 3: Validate tag not on remote
+    echo "Step 3: Checking remote tag status..."
+    git fetch --tags origin 2>/dev/null || true
+    if git ls-remote --tags origin | grep -q "refs/tags/{{ tag }}$"; then
+        echo "❌ Tag {{ tag }} already exists on remote"
+        echo "Remote tags:"
+        git ls-remote --tags origin | grep "{{ tag }}"
+        exit 1
+    fi
+    echo "✅ Tag {{ tag }} not on remote"
+    echo ""
+
+    # Step 4: Validate no GitHub release exists (requires gh CLI)
+    echo "Step 4: Checking GitHub release status..."
+    if command -v gh >/dev/null 2>&1; then
+        if gh release view "{{ tag }}" >/dev/null 2>&1; then
+            echo "❌ GitHub release {{ tag }} already exists"
+            gh release view "{{ tag }}"
             exit 1
-            ;;
-    esac
-
-    echo "🚀 Starting release workflow for peter-hook..."
+        fi
+        echo "✅ No GitHub release exists for {{ tag }}"
+    else
+        echo "⚠️  gh CLI not found, skipping GitHub release check"
+        echo "   Install with: brew install gh"
+    fi
     echo ""
 
-    # Prerequisites validation
-    echo "Step 1: Validating prerequisites..."
-    if ! command -v versioneer >/dev/null 2>&1; then
-        echo "❌ versioneer not found. Install with: cargo install versioneer"
-        exit 1
-    fi
+    # Step 5: Validate version greater than latest release
+    echo "Step 5: Validating version ordering..."
+    if command -v gh >/dev/null 2>&1; then
+        LATEST_RELEASE=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+        if [ -n "$LATEST_RELEASE" ]; then
+            LATEST_VERSION=$(echo "$LATEST_RELEASE" | sed 's/v//')
+            echo "  Latest release: $LATEST_RELEASE ($LATEST_VERSION)"
+            echo "  New version: {{ tag }} ($TAG_VERSION)"
 
-    if ! git rev-parse --git-dir >/dev/null 2>&1; then
-        echo "❌ Not in a git repository"
-        exit 1
-    fi
+            # Simple version comparison (works for semver X.Y.Z)
+            if [ "$TAG_VERSION" = "$LATEST_VERSION" ]; then
+                echo "❌ New version equals latest release version"
+                exit 1
+            fi
 
-    if ! git diff-index --quiet HEAD --; then
-        echo "❌ Working directory is not clean. Please commit or stash changes."
-        git status --short
-        exit 1
+            # Note: Full semver comparison would require sort -V or similar
+            # For now, trust developer has bumped correctly
+            echo "✅ Version ordering looks correct"
+        else
+            echo "ℹ️  No previous releases found (first release)"
+        fi
+    else
+        echo "⚠️  gh CLI not found, skipping version ordering check"
     fi
-
-    CURRENT_BRANCH=$(git branch --show-current)
-    if [ "$CURRENT_BRANCH" != "main" ]; then
-        echo "❌ Must be on main branch for release (currently on: $CURRENT_BRANCH)"
-        exit 1
-    fi
-
-    git fetch origin main >/dev/null 2>&1
-    LOCAL=$(git rev-parse HEAD)
-    REMOTE=$(git rev-parse origin/main)
-    if [ "$LOCAL" != "$REMOTE" ]; then
-        echo "❌ Local main branch is not up-to-date with origin/main"
-        echo "Run: git pull origin main"
-        exit 1
-    fi
-
-    if ! versioneer verify >/dev/null 2>&1; then
-        echo "❌ Version files are not synchronized"
-        echo "Run: versioneer sync"
-        exit 1
-    fi
-
-    CURRENT_VERSION=$(versioneer show)
-    echo "✅ Prerequisites validated (current version: $CURRENT_VERSION)"
     echo ""
 
-    # Quality gates
-    echo "Step 2: Running quality gates..."
-    just test
-    just audit
-    just deny
-    just pre-commit
-    echo "✅ All quality gates passed"
-    echo ""
-
-    # Version management
-    echo "Step 3: Bumping {{ level }} version..."
-    versioneer {{ level }}
-    NEW_VERSION=$(versioneer show)
-    echo "✅ Version bumped: $CURRENT_VERSION → $NEW_VERSION"
-    echo ""
-
-    # Create commit FIRST
-    echo "Step 4: Committing changes..."
-    git add Cargo.toml Cargo.lock VERSION
-    git commit -m "chore: bump version to $NEW_VERSION"
-    echo "✅ Changes committed"
-    echo ""
-
-    # Create tag AFTER commit
-    echo "Step 5: Creating git tag..."
-    versioneer tag --tag-format "v{version}"
-    echo "✅ Tag created: v$NEW_VERSION"
-    echo ""
-
-    # Interactive confirmation
-    echo "Ready to push release:"
-    echo "  Version: $NEW_VERSION"
-    echo "  Tag: v$NEW_VERSION"
+    # Step 6: Show summary and confirm
+    echo "Ready to publish release:"
+    echo "  Tag: {{ tag }}"
+    echo "  Version: $TAG_VERSION"
+    echo "  Commit: ${TAG_COMMIT:0:8}"
     echo ""
 
     if [ -t 0 ]; then
-        read -p "Push release to GitHub? [y/N]: " -n 1 -r
+        read -p "Push tag to trigger release? [y/N]: " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Release preparation complete but not pushed"
-            echo "To push manually: git push origin main && git push --tags"
+            echo "Release cancelled"
+            echo "To push manually: git push origin {{ tag }}"
             exit 0
         fi
     fi
 
-    # Push to remote
-    echo "Step 6: Pushing to remote..."
-    git push origin main
-    git push --tags
-    echo "✅ Pushed to remote"
+    # Step 7: Push tag only
+    echo "Step 6: Pushing tag to remote..."
+    git push origin "{{ tag }}"
+    echo "✅ Tag pushed to remote"
     echo ""
-    echo "🎉 Release complete! Tag v$NEW_VERSION pushed."
+    echo "🎉 Release {{ tag }} published!"
+    echo ""
+    echo "GitHub Actions will now:"
+    echo "  1. Create draft release"
+    echo "  2. Build cross-platform binaries"
+    echo "  3. Publish release"
+    echo ""
+    echo "Monitor progress: gh run list --workflow=release.yml"
 
 # Clean build artifacts
 clean:

@@ -311,8 +311,7 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
         let resolved_hooks = first_resolved;
         if debug::is_enabled() && io::stdout().is_terminal() {
             println!(
-                "\x1b[38;5;201m🎪 \x1b[1m\x1b[38;5;51mPETER-HOOK EXECUTION \
-                     EXTRAVAGANZA!\x1b[0m"
+                "\x1b[38;5;201m🎪 \x1b[1m\x1b[38;5;51mPETER-HOOK EXECUTION EXTRAVAGANZA!\x1b[0m"
             );
             println!(
                 "\x1b[38;5;198m📋 Config: \x1b[38;5;87m{}\x1b[0m",
@@ -322,13 +321,13 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
             if let Some(ref changed_files) = resolved_hooks.changed_files {
                 println!(
                     "\x1b[38;5;214m🎯 \x1b[1m\x1b[38;5;208mFile targeting activated!\x1b[0m \
-                         \x1b[38;5;118m{} files detected\x1b[0m",
+                     \x1b[38;5;118m{} files detected\x1b[0m",
                     changed_files.len()
                 );
                 if changed_files.is_empty() {
                     println!(
-                        "\x1b[38;5;226m⚡ \x1b[1mNo files changed - hooks may skip for \
-                             maximum speed!\x1b[0m"
+                        "\x1b[38;5;226m⚡ \x1b[1mNo files changed - hooks may skip for maximum \
+                         speed!\x1b[0m"
                     );
                 } else {
                     // Show first few files with rotating emojis
@@ -352,7 +351,7 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
 
             println!(
                 "\x1b[38;5;46m🚀 \x1b[1m\x1b[38;5;82mLaunching {} hooks for event:\x1b[0m \
-                     \x1b[38;5;226m{}\x1b[0m",
+                 \x1b[38;5;226m{}\x1b[0m",
                 resolved_hooks.hooks.len(),
                 event
             );
@@ -410,7 +409,7 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
                 if changed_files.is_empty() {
                     println!(
                         "📋 \x1b[33mNo files changed\x1b[0m - some hooks may be \
-                             \x1b[90mskipped\x1b[0m"
+                         \x1b[90mskipped\x1b[0m"
                     );
                 } else {
                     println!(
@@ -441,8 +440,7 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
             };
 
             println!(
-                "\n{} \x1b[1m\x1b[35mExecuting {} hooks\x1b[0m for event: \
-                     \x1b[1m\x1b[33m{}\x1b[0m",
+                "\n{} \x1b[1m\x1b[35mExecuting {} hooks\x1b[0m for event: \x1b[1m\x1b[33m{}\x1b[0m",
                 hook_emoji,
                 resolved_hooks.hooks.len(),
                 event
@@ -568,17 +566,16 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
             if results.success {
                 println!(
                     "\x1b[38;5;46m🎊 \x1b[1m\x1b[38;5;82mALL HOOKS SUCCEEDED!\x1b[0m \
-                         \x1b[38;5;46m🎊\x1b[0m"
+                     \x1b[38;5;46m🎊\x1b[0m"
                 );
                 println!(
                     "\x1b[38;5;118m✨ Your code is \
-                         \x1b[1m\x1b[38;5;159mPERFECT\x1b[0m\x1b[38;5;118m! Ready to commit! \
-                         ✨\x1b[0m"
+                     \x1b[1m\x1b[38;5;159mPERFECT\x1b[0m\x1b[38;5;118m! Ready to commit! ✨\x1b[0m"
                 );
             } else {
                 println!(
                     "\x1b[38;5;196m💥 \x1b[1m\x1b[38;5;199mSOME HOOKS FAILED!\x1b[0m \
-                         \x1b[38;5;196m💥\x1b[0m"
+                     \x1b[38;5;196m💥\x1b[0m"
                 );
                 let failed = results.get_failed_hooks();
                 println!(

@@ -406,17 +406,17 @@ impl HookConfig {
     /// Returns an error if:
     /// - A hook has both `files` and `run_always = true` set (conflicting
     ///   options)
-    /// - A hook uses `execution_type` = "per-file" or "in-place" with
-    ///   template variables like `{CHANGED_FILES}`
+    /// - A hook uses `execution_type` = "per-file" or "in-place" with template
+    ///   variables like `{CHANGED_FILES}`
     pub fn validate(&self) -> Result<()> {
         if let Some(hooks) = &self.hooks {
             for (name, hook) in hooks {
                 // Check for conflicting files and run_always settings
                 if hook.run_always && hook.files.is_some() {
                     return Err(anyhow::anyhow!(
-                        "Hook '{name}' cannot have both 'files' patterns and 'run_always = true'. Use \
-                         either file patterns for conditional execution or 'run_always = true' \
-                         for unconditional execution."
+                        "Hook '{name}' cannot have both 'files' patterns and 'run_always = true'. \
+                         Use either file patterns for conditional execution or 'run_always = \
+                         true' for unconditional execution."
                     ));
                 }
 
@@ -449,9 +449,10 @@ impl HookConfig {
                 // Check for conflicting placeholder and includes settings
                 if group.placeholder == Some(true) && !group.includes.is_empty() {
                     return Err(anyhow::anyhow!(
-                        "Group '{name}' cannot have both 'placeholder = true' and non-empty 'includes'. \
-                         Placeholder groups should have 'includes = []' and are used only to \
-                         trigger git hook installation for hierarchical resolution in subdirectories."
+                        "Group '{name}' cannot have both 'placeholder = true' and non-empty \
+                         'includes'. Placeholder groups should have 'includes = []' and are used \
+                         only to trigger git hook installation for hierarchical resolution in \
+                         subdirectories."
                     ));
                 }
             }

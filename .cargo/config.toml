@@ -1,6 +1,0 @@
-# Local development override for workhelix-cli-common
-# This allows using the local path dependency during development
-# while CI/CD and external users will use the git dependency
-
-[patch."https://github.com/workhelix/workhelix-cli-common"]
-workhelix-cli-common = { path = "../workhelix-cli-common" }

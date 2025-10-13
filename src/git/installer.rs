@@ -152,7 +152,8 @@ impl GitHookInstaller {
                     if let Some(groups) = &config.groups {
                         if let Some(group) = groups.get(hook_event) {
                             if group.placeholder == Some(true) {
-                                // Placeholder group found - install hook script for hierarchical resolution
+                                // Placeholder group found - install hook script for hierarchical
+                                // resolution
                                 return self.install_hook_script(hook_event);
                             }
                         }

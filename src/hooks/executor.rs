@@ -61,8 +61,9 @@ impl HookExecutor {
 
     /// Execute multiple configuration groups (for hierarchical resolution)
     ///
-    /// This executes hooks from multiple configurations, each in their own directory.
-    /// All results are aggregated into a single `ExecutionResults`.
+    /// This executes hooks from multiple configurations, each in their own
+    /// directory. All results are aggregated into a single
+    /// `ExecutionResults`.
     ///
     /// # Errors
     ///
@@ -541,7 +542,8 @@ impl HookExecutor {
         Self::execute_command_parts(name, hook, worktree_context, &base_command_parts)
     }
 
-    /// Execute hook once in config directory without file arguments (in-place mode)
+    /// Execute hook once in config directory without file arguments (in-place
+    /// mode)
     fn execute_in_place_hook(
         name: &str,
         hook: &ResolvedHook,
@@ -627,8 +629,9 @@ impl HookExecutor {
 
     /// Transform file paths from repo-relative to execution-directory-relative
     ///
-    /// When hooks run from a subdirectory config, Git provides paths relative to repo root,
-    /// but the hook needs paths relative to its execution directory.
+    /// When hooks run from a subdirectory config, Git provides paths relative
+    /// to repo root, but the hook needs paths relative to its execution
+    /// directory.
     ///
     /// Example:
     /// - Repo root: /repo

@@ -175,7 +175,10 @@ fn test_config_command_has_subcommands() {
         .find_subcommand("config")
         .expect("config subcommand not found");
 
-    let subcommands: Vec<_> = config_cmd.get_subcommands().map(clap::Command::get_name).collect();
+    let subcommands: Vec<_> = config_cmd
+        .get_subcommands()
+        .map(clap::Command::get_name)
+        .collect();
 
     assert!(
         subcommands.contains(&"show"),
