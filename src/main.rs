@@ -7,7 +7,7 @@ use peter_hook::{
     cli::{Cli, Commands, ConfigCommand},
     config::GlobalConfig,
     debug,
-    git::{ChangeDetectionMode, GitHookInstaller, GitRepository, WorktreeHookStrategy},
+    git::{ChangeDetectionMode, GitHookInstaller, GitRepository, WorktreeHookStrategy, SUPPORTED_HOOKS},
     hooks::{HookExecutor, HookResolver},
 };
 use std::{
@@ -60,9 +60,11 @@ fn run() -> Result<()> {
             Ok(())
         }
         Commands::Completions { shell } => {
-            workhelix_cli_common::completions::generate_completions::<Cli>(shell);
+            peter_hook::cli::completions::generate_completions(shell);
             Ok(())
         }
+        Commands::RunTargets => print_run_targets(),
+        Commands::LintTargets => print_lint_targets(),
         Commands::Doctor => {
             let exit_code = peter_hook::doctor::run_doctor();
             if exit_code != 0 {
@@ -244,6 +246,29 @@ fn show_license() {
     println!("LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,");
     println!("OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE");
     println!("SOFTWARE.");
+}
+
+/// Print supported git hook names for completion scripts
+fn print_run_targets() -> Result<()> {
+    for event in SUPPORTED_HOOKS {
+        println!("{event}");
+    }
+    Ok(())
+}
+
+/// Print available hook/group names for lint completions
+fn print_lint_targets() -> Result<()> {
+    let current_dir = env::current_dir().context("Failed to get current working directory")?;
+    let resolver = HookResolver::new(&current_dir);
+    let names = resolver
+        .list_hook_names()
+        .context("Failed to load hook configuration for completions")?;
+
+    for name in names {
+        println!("{name}");
+    }
+
+    Ok(())
 }
 
 /// Run hooks for a specific git event

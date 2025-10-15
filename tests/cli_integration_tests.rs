@@ -59,6 +59,8 @@ fn test_completions_bash() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("bash"));
+    assert!(stdout.contains("_run-targets"));
+    assert!(stdout.contains("_lint-targets"));
 }
 
 #[test]
@@ -72,6 +74,8 @@ fn test_completions_zsh() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("zsh"));
+    assert!(stdout.contains("_run-targets"));
+    assert!(stdout.contains("_lint-targets"));
 }
 
 #[test]
@@ -85,6 +89,53 @@ fn test_completions_fish() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("fish"));
+    assert!(stdout.contains("_run-targets"));
+    assert!(stdout.contains("_lint-targets"));
+}
+
+#[test]
+fn test_hidden_run_targets_command() {
+    let output = Command::new(bin_path())
+        .arg("_run-targets")
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("pre-commit"));
+}
+
+#[test]
+fn test_hidden_lint_targets_command() {
+    let temp_dir = TempDir::new().unwrap();
+    Git2Repository::init(temp_dir.path()).unwrap();
+
+    let config = r#"
+[hooks.lint]
+command = "echo lint"
+modifies_repository = false
+
+[groups.all]
+includes = ["lint"]
+
+[groups.placeholder]
+placeholder = true
+includes = []
+"#;
+
+    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+
+    let output = Command::new(bin_path())
+        .current_dir(temp_dir.path())
+        .arg("_lint-targets")
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("lint"));
+    assert!(stdout.contains("all"));
+    assert!(!stdout.contains("placeholder"));
 }
 
 #[test]

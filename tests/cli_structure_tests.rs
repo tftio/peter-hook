@@ -8,8 +8,12 @@ use peter_hook::cli::{Cli, Commands, ConfigCommand};
 fn test_cli_has_all_subcommands() {
     let cmd = Cli::command();
 
-    // Verify all expected subcommands are present
-    let subcommands: Vec<_> = cmd.get_subcommands().map(clap::Command::get_name).collect();
+    // Verify all expected visible subcommands are present
+    let subcommands: Vec<_> = cmd
+        .get_subcommands()
+        .filter(|sub| !sub.is_hide_set())
+        .map(clap::Command::get_name)
+        .collect();
 
     assert!(
         subcommands.contains(&"install"),
@@ -55,11 +59,11 @@ fn test_cli_has_all_subcommands() {
         "Missing 'update' subcommand"
     );
 
-    // Should have exactly 13 subcommands
+    // Should have exactly 13 visible subcommands
     assert_eq!(
         subcommands.len(),
         13,
-        "Expected 13 subcommands, got {}",
+        "Expected 13 visible subcommands, got {}",
         subcommands.len()
     );
 }
@@ -72,6 +76,22 @@ fn test_cli_name_and_about() {
     assert!(cmd.get_about().is_some());
     let about = cmd.get_about().unwrap().to_string();
     assert!(about.contains("hierarchical") || about.contains("git hooks"));
+}
+
+#[test]
+fn test_hidden_completion_helpers_exist() {
+    let cmd = Cli::command();
+    let run_targets = cmd
+        .get_subcommands()
+        .find(|sub| sub.get_name() == "_run-targets")
+        .expect("Missing _run-targets helper");
+    assert!(run_targets.is_hide_set(), "_run-targets should be hidden");
+
+    let lint_targets = cmd
+        .get_subcommands()
+        .find(|sub| sub.get_name() == "_lint-targets")
+        .expect("Missing _lint-targets helper");
+    assert!(lint_targets.is_hide_set(), "_lint-targets should be hidden");
 }
 
 #[test]

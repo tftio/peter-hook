@@ -1,3 +1,5 @@
+pub mod completions;
+
 use clap::{Parser, Subcommand};
 
 /// Command-line interface for peter hook manager
@@ -84,6 +86,12 @@ pub enum Commands {
         /// Shell type (bash, zsh, fish, etc.)
         shell: clap_complete::Shell,
     },
+    /// Internal helper: list run targets for shell completions
+    #[command(name = "_run-targets", hide = true)]
+    RunTargets,
+    /// Internal helper: list lint targets for shell completions
+    #[command(name = "_lint-targets", hide = true)]
+    LintTargets,
     /// Check health and configuration
     Doctor,
     /// Update to latest version

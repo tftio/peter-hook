@@ -118,6 +118,17 @@ Positional:
 
 - ``shell``: Shell type (bash, zsh, fish, powershell, elvish)
 
+The generated scripts now include dynamic completions for key verbs:
+
+- ``run`` suggests only git hook events that peter-hook knows how to install.
+- ``lint`` suggests hook and group names discovered from the nearest ``hooks.toml`` (placeholder groups are skipped).
+
+.. note::
+
+   The completion scripts call back into ``peter-hook`` using internal helper
+   subcommands (``_run-targets`` and ``_lint-targets``). They are hidden from
+   normal help output and meant solely for powering completions.
+
 Usage example:
 
 .. code-block:: bash

@@ -197,6 +197,46 @@ impl HookResolver {
         }))
     }
 
+    /// List all hook and group names available in the nearest configuration.
+    ///
+    /// Placeholder groups are filtered out because they do not represent
+    /// executable targets.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if configuration parsing fails or the configuration
+    /// directory cannot be determined.
+    pub fn list_hook_names(&self) -> Result<Vec<String>> {
+        let Some(config_path) = self.find_config_file()? else {
+            return Ok(Vec::new());
+        };
+
+        let config = HookConfig::from_file(&config_path)?;
+        let mut names = Vec::new();
+
+        if let Some(hooks) = &config.hooks {
+            names.extend(hooks.keys().cloned());
+        }
+
+        if let Some(groups) = &config.groups {
+            names.extend(
+                groups
+                    .iter()
+                    .filter_map(|(name, group)| {
+                        if group.placeholder == Some(true) {
+                            None
+                        } else {
+                            Some(name.clone())
+                        }
+                    }),
+            );
+        }
+
+        names.sort();
+        names.dedup();
+        Ok(names)
+    }
+
     /// Resolve hooks in lint mode (current directory as root, all matching
     /// non-ignored files)
     ///
@@ -870,5 +910,35 @@ includes = ["lint"]
         let real_result = resolver.resolve_hooks("real-group").unwrap();
         assert!(real_result.is_some());
         assert_eq!(real_result.unwrap().hooks.len(), 1);
+    }
+
+    #[test]
+    fn test_list_hook_names_excludes_placeholders() {
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+        let _ = Git2Repository::init(root).unwrap();
+
+        let config_content = r#"
+[hooks.lint]
+command = "cargo clippy"
+
+[hooks.test]
+command = "cargo test"
+
+[groups.all]
+includes = ["lint", "test"]
+
+[groups.placeholder]
+placeholder = true
+includes = []
+"#;
+
+        create_test_config(root, config_content);
+
+        let resolver = HookResolver::new(root);
+        let names = resolver.list_hook_names().unwrap();
+
+        assert_eq!(names, vec!["all", "lint", "test"]);
+        assert!(!names.contains(&"placeholder".to_string()));
     }
 }
