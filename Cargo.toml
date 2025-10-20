@@ -1,6 +1,6 @@
 [package]
 name = "peter-hook"
-version = "3.2.5"
+version = "3.2.6"
 edition = "2024"
 rust-version = "1.86.0"
 authors = ["Peter Hook Contributors"]
@@ -24,7 +24,7 @@ serde = { version = "1.0", features = ["derive"] }
  serde_json = "1.0"
  dirs = "6.0"
  shellexpand = "3.1"
-workhelix-cli-common = "0.2.0"
+workhelix-cli-common = "0.2.3"
 cargo-edit = "0.13.7"
 
 
