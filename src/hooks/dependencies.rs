@@ -96,9 +96,7 @@ impl DependencyResolver {
                     self.detect_cycle(dep, visited, recursion_stack)?;
                 } else if recursion_stack.contains(dep) {
                     return Err(anyhow::anyhow!(
-                        "Circular dependency detected: {} depends on {}",
-                        hook,
-                        dep
+                        "Circular dependency detected: {hook} depends on {dep}"
                     ));
                 }
             }

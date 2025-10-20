@@ -140,28 +140,25 @@ impl GitHookInstaller {
     /// Returns an error if hook installation fails
     pub fn install_hook(&self, hook_event: &str, resolver: &HookResolver) -> Result<InstallAction> {
         // Check if we have configuration for this event
-        match resolver.resolve_hooks(hook_event)? {
-            Some(_) => {
-                // We have real hooks configuration, install the hook
-                self.install_hook_script(hook_event)
-            }
-            None => {
-                // No hooks resolved - but check if there's a placeholder group
-                if let Some(config_path) = resolver.find_config_file()? {
-                    let config = HookConfig::from_file(&config_path)?;
-                    if let Some(groups) = &config.groups {
-                        if let Some(group) = groups.get(hook_event) {
-                            if group.placeholder == Some(true) {
-                                // Placeholder group found - install hook script for hierarchical
-                                // resolution
-                                return self.install_hook_script(hook_event);
-                            }
+        if (resolver.resolve_hooks(hook_event)?).is_some() {
+            // We have real hooks configuration, install the hook
+            self.install_hook_script(hook_event)
+        } else {
+            // No hooks resolved - but check if there's a placeholder group
+            if let Some(config_path) = resolver.find_config_file()? {
+                let config = HookConfig::from_file(&config_path)?;
+                if let Some(groups) = &config.groups {
+                    if let Some(group) = groups.get(hook_event) {
+                        if group.placeholder == Some(true) {
+                            // Placeholder group found - install hook script for hierarchical
+                            // resolution
+                            return self.install_hook_script(hook_event);
                         }
                     }
                 }
-                // No configuration and no placeholder
-                Ok(InstallAction::Skipped("No configuration found".to_string()))
             }
+            // No configuration and no placeholder
+            Ok(InstallAction::Skipped("No configuration found".to_string()))
         }
     }
 
@@ -674,11 +671,11 @@ description = "Placeholder for hierarchical resolution"
     #[test]
     fn test_install_placeholder_creates_hook_script() {
         let temp_dir = TempDir::new().unwrap();
-        let config_content = r#"
+        let config_content = r"
 [groups.pre-push]
 includes = []
 placeholder = true
-"#;
+";
 
         let (repo, _) = create_test_repo_with_config(temp_dir.path(), config_content);
         let installer =
@@ -707,10 +704,10 @@ placeholder = true
     #[test]
     fn test_install_skips_non_placeholder_empty() {
         let temp_dir = TempDir::new().unwrap();
-        let config_content = r#"
+        let config_content = r"
 [groups.empty-group]
 includes = []
-"#;
+";
 
         let (repo, _) = create_test_repo_with_config(temp_dir.path(), config_content);
         let installer =

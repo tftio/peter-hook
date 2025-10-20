@@ -7,7 +7,9 @@ use peter_hook::{
     cli::{Cli, Commands, ConfigCommand},
     config::GlobalConfig,
     debug,
-    git::{ChangeDetectionMode, GitHookInstaller, GitRepository, WorktreeHookStrategy, SUPPORTED_HOOKS},
+    git::{
+        ChangeDetectionMode, GitHookInstaller, GitRepository, SUPPORTED_HOOKS, WorktreeHookStrategy,
+    },
     hooks::{HookExecutor, HookResolver},
 };
 use std::{
@@ -63,7 +65,10 @@ fn run() -> Result<()> {
             peter_hook::cli::completions::generate_completions(shell);
             Ok(())
         }
-        Commands::RunTargets => print_run_targets(),
+        Commands::RunTargets => {
+            print_run_targets();
+            Ok(())
+        }
         Commands::LintTargets => print_lint_targets(),
         Commands::Doctor => {
             let exit_code = peter_hook::doctor::run_doctor();
@@ -100,7 +105,7 @@ fn install_hooks(force: bool, worktree_strategy: &str) -> Result<()> {
     // Parse the worktree strategy
     let strategy: WorktreeHookStrategy = worktree_strategy
         .parse()
-        .map_err(|_| anyhow::anyhow!("Invalid worktree strategy: {}", worktree_strategy))?;
+        .map_err(|_| anyhow::anyhow!("Invalid worktree strategy: {worktree_strategy}"))?;
 
     let installer = GitHookInstaller::with_strategy(strategy)
         .context("Failed to initialize git hook installer")?;
@@ -249,11 +254,10 @@ fn show_license() {
 }
 
 /// Print supported git hook names for completion scripts
-fn print_run_targets() -> Result<()> {
+fn print_run_targets() {
     for event in SUPPORTED_HOOKS {
         println!("{event}");
     }
-    Ok(())
 }
 
 /// Print available hook/group names for lint completions

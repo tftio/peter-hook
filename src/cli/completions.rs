@@ -7,6 +7,10 @@ use std::io::{self, Write};
 use super::Cli;
 
 /// Generate shell completions with dynamic target support for `run` and `lint`.
+///
+/// # Panics
+///
+/// Panics if `clap_complete` generates invalid UTF-8 or if writing to stdout fails.
 pub fn generate_completions(shell: Shell) {
     let mut cmd = Cli::command();
     let bin_name = cmd.get_name().to_string();
@@ -57,7 +61,7 @@ fn print_instructions(shell: Shell, bin_name: &str) {
 fn augment_script(shell: Shell, bin_name: &str, script: String) -> String {
     match shell {
         Shell::Bash => augment_bash(bin_name, script),
-        Shell::Zsh => augment_zsh(bin_name, script),
+        Shell::Zsh => augment_zsh(bin_name, &script),
         Shell::Fish => augment_fish(bin_name, script),
         _ => script,
     }
@@ -72,7 +76,8 @@ fn augment_bash(bin_name: &str, script: String) -> String {
         &format!(
             concat!(
                 "        peter__hook__run)\n",
-                "            opts=\"-h --all-files --dry-run --debug --help <EVENT> [GIT_ARGS]...\"\n",
+                "            opts=\"-h --all-files --dry-run --debug --help <EVENT> \
+                 [GIT_ARGS]...\"\n",
                 "            if [[ ${{cur}} == -* ]]; then\n",
                 "                COMPREPLY=( $(compgen -W \"${{opts}}\" -- \"${{cur}}\") )\n",
                 "                return 0\n",
@@ -133,30 +138,22 @@ fn augment_bash(bin_name: &str, script: String) -> String {
     updated
 }
 
-fn augment_zsh(bin_name: &str, script: String) -> String {
+fn augment_zsh(bin_name: &str, script: &str) -> String {
     let sanitized = bin_name.replace('-', "_");
     let run_func = format!("_{sanitized}_run_events");
     let lint_func = format!("_{sanitized}_lint_targets");
 
     let mut updated = script.replace(
         ":event -- The git hook event (pre-commit, pre-push, etc.):_default",
-        format!(
-            ":event -- The git hook event (pre-commit, pre-push, etc.):{run}",
-            run = run_func
-        )
-        .as_str(),
+        &format!(":event -- The git hook event (pre-commit, pre-push, etc.):{run_func}"),
     );
 
     updated = updated.replace(
         ":hook_name -- Name of the hook or group to run:_default",
-        format!(
-            ":hook_name -- Name of the hook or group to run:{lint}",
-            lint = lint_func
-        )
-        .as_str(),
+        &format!(":hook_name -- Name of the hook or group to run:{lint_func}"),
     );
 
-    let helper_template = r#"
+    let helper_template = r"
 __RUN__() {
     local -a targets
     targets=(${(@f)$(__BIN__ _run-targets)})
@@ -176,7 +173,7 @@ __LINT__() {
         _message 'no hooks found'
     fi
 }
-"#;
+";
 
     let helper = helper_template
         .replace("__RUN__", &run_func)
@@ -242,8 +239,10 @@ fn augment_fish(bin_name: &str, script: String) -> String {
             "    end\n",
             "    test $found -eq 1\n",
             "end\n",
-            "\ncomplete -c {bin_name} -n \"__fish_{sanitized}_using_subcommand run; and __fish_{sanitized}_run_needs_event\" -f -a \"(__fish_{sanitized}_run_targets)\"\n",
-            "complete -c {bin_name} -n \"__fish_{sanitized}_using_subcommand lint; and __fish_{sanitized}_lint_needs_target\" -f -a \"(__fish_{sanitized}_lint_targets)\"\n"
+            "\ncomplete -c {bin_name} -n \"__fish_{sanitized}_using_subcommand run; and \
+             __fish_{sanitized}_run_needs_event\" -f -a \"(__fish_{sanitized}_run_targets)\"\n",
+            "complete -c {bin_name} -n \"__fish_{sanitized}_using_subcommand lint; and \
+             __fish_{sanitized}_lint_needs_target\" -f -a \"(__fish_{sanitized}_lint_targets)\"\n"
         ),
         bin_name = bin_name,
         sanitized = sanitized

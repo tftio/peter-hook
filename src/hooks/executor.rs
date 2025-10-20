@@ -653,8 +653,7 @@ impl HookExecutor {
                 // If execution_dir is not a prefix of abs_file, keep the original path
                 abs_file
                     .strip_prefix(execution_dir)
-                    .map(|p| p.to_path_buf())
-                    .unwrap_or_else(|_| file.clone())
+                    .map_or_else(|_| file.clone(), std::path::Path::to_path_buf)
             })
             .collect()
     }

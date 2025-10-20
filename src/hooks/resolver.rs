@@ -219,17 +219,13 @@ impl HookResolver {
         }
 
         if let Some(groups) = &config.groups {
-            names.extend(
-                groups
-                    .iter()
-                    .filter_map(|(name, group)| {
-                        if group.placeholder == Some(true) {
-                            None
-                        } else {
-                            Some(name.clone())
-                        }
-                    }),
-            );
+            names.extend(groups.iter().filter_map(|(name, group)| {
+                if group.placeholder == Some(true) {
+                    None
+                } else {
+                    Some(name.clone())
+                }
+            }));
         }
 
         names.sort();
