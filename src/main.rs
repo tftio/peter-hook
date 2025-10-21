@@ -77,24 +77,6 @@ fn run() -> Result<()> {
             }
             Ok(())
         }
-        Commands::Update {
-            version,
-            force,
-            install_dir,
-        } => {
-            let repo_info = workhelix_cli_common::RepoInfo::new("tftio", "peter-hook", "v");
-            let exit_code = workhelix_cli_common::update::run_update(
-                &repo_info,
-                env!("CARGO_PKG_VERSION"),
-                version.as_deref(),
-                force,
-                install_dir.as_deref(),
-            );
-            if exit_code != 0 {
-                process::exit(exit_code);
-            }
-            Ok(())
-        }
     }
 }
 

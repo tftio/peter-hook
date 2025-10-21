@@ -10,7 +10,8 @@ use super::Cli;
 ///
 /// # Panics
 ///
-/// Panics if `clap_complete` generates invalid UTF-8 or if writing to stdout fails.
+/// Panics if `clap_complete` generates invalid UTF-8 or if writing to stdout
+/// fails.
 pub fn generate_completions(shell: Shell) {
     let mut cmd = Cli::command();
     let bin_name = cmd.get_name().to_string();

@@ -94,17 +94,6 @@ pub enum Commands {
     LintTargets,
     /// Check health and configuration
     Doctor,
-    /// Update to latest version
-    Update {
-        /// Specific version to install
-        version: Option<String>,
-        /// Force update even if already up-to-date
-        #[arg(long)]
-        force: bool,
-        /// Custom installation directory
-        #[arg(long)]
-        install_dir: Option<std::path::PathBuf>,
-    },
 }
 
 /// Configuration management subcommands

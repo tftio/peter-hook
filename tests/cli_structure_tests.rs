@@ -54,16 +54,12 @@ fn test_cli_has_all_subcommands() {
         subcommands.contains(&"doctor"),
         "Missing 'doctor' subcommand"
     );
-    assert!(
-        subcommands.contains(&"update"),
-        "Missing 'update' subcommand"
-    );
 
-    // Should have exactly 13 visible subcommands
+    // Should have exactly 12 visible subcommands
     assert_eq!(
         subcommands.len(),
-        13,
-        "Expected 13 visible subcommands, got {}",
+        12,
+        "Expected 12 visible subcommands, got {}",
         subcommands.len()
     );
 }
@@ -270,35 +266,6 @@ fn test_completions_command_has_shell_arg() {
         .get_positionals()
         .any(|arg| arg.get_id().as_str() == "shell");
     assert!(has_shell, "Missing 'shell' positional argument");
-}
-
-#[test]
-fn test_update_command_structure() {
-    let cmd = Cli::command();
-    let update_cmd = cmd
-        .find_subcommand("update")
-        .expect("update subcommand not found");
-
-    // Should have optional version positional
-    let has_version = update_cmd
-        .get_positionals()
-        .any(|arg| arg.get_id().as_str() == "version");
-    assert!(has_version, "Missing 'version' positional argument");
-
-    // Should have --force flag
-    let force_arg = update_cmd
-        .get_arguments()
-        .find(|arg| arg.get_long() == Some("force"));
-    assert!(force_arg.is_some(), "Missing --force flag in update");
-
-    // Should have --install-dir flag
-    let install_dir_arg = update_cmd
-        .get_arguments()
-        .find(|arg| arg.get_long() == Some("install-dir"));
-    assert!(
-        install_dir_arg.is_some(),
-        "Missing --install-dir flag in update"
-    );
 }
 
 #[test]

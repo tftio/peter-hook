@@ -729,7 +729,6 @@ fn test_all_subcommand_help() {
         "license",
         "completions",
         "doctor",
-        "update",
         "config",
     ];
 

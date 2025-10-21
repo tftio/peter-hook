@@ -380,19 +380,3 @@ modifies_repository = false
     assert!(output.status.success() || output.status.code() == Some(1));
 }
 
-#[test]
-fn test_update_check_same_version() {
-    let current_version = env!("CARGO_PKG_VERSION");
-
-    let output = Command::new(bin_path())
-        .arg("update")
-        .arg("--version")
-        .arg(current_version)
-        .arg("--force")
-        .output()
-        .expect("Failed to execute command");
-
-    // Update may succeed or fail due to network/permissions
-    // Just verify it doesn't panic
-    assert!(matches!(output.status.code(), Some(0..=2)));
-}

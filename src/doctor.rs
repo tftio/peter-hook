@@ -1,56 +1,58 @@
 //! Health check and diagnostics module.
 
 use crate::{HookConfig, git::GitRepository, hooks::HookResolver};
+use workhelix_cli_common::{DoctorCheck, DoctorChecks, RepoInfo};
+
+/// Peter-hook doctor checks implementation.
+pub struct PeterHookDoctor;
+
+impl DoctorChecks for PeterHookDoctor {
+    fn repo_info() -> RepoInfo {
+        RepoInfo::new("tftio", "peter-hook")
+    }
+
+    fn current_version() -> &'static str {
+        env!("CARGO_PKG_VERSION")
+    }
+
+    fn tool_checks(&self) -> Vec<DoctorCheck> {
+        let mut checks = Vec::new();
+
+        // Git repository checks
+        checks.extend(check_git_repository());
+
+        // Configuration checks
+        checks.extend(check_configuration());
+
+        checks
+    }
+}
 
 /// Run doctor command to check health and configuration.
 ///
 /// Returns exit code: 0 if healthy, 1 if issues found.
 #[must_use]
 pub fn run_doctor() -> i32 {
-    println!("🏥 peter-hook health check");
-    println!("==========================");
-    println!();
-
-    let mut has_errors = false;
-    let mut has_warnings = false;
-
-    check_git_repository(&mut has_errors, &mut has_warnings);
-    println!();
-
-    check_configuration(&mut has_errors, &mut has_warnings);
-    println!();
-
-    check_updates(&mut has_warnings);
-    println!();
-
-    // Summary
-    if has_errors {
-        println!("❌ Issues found - see above for details");
-        1
-    } else if has_warnings {
-        println!("⚠️  Warnings found - configuration may need attention");
-        0 // Warnings don't cause failure
-    } else {
-        println!("✨ Everything looks healthy!");
-        0
-    }
+    let doctor = PeterHookDoctor;
+    workhelix_cli_common::run_doctor(&doctor)
 }
 
-fn check_git_repository(has_errors: &mut bool, has_warnings: &mut bool) {
-    println!("Git Repository:");
+fn check_git_repository() -> Vec<DoctorCheck> {
+    let mut checks = Vec::new();
+
     match GitRepository::find_from_current_dir() {
         Ok(repo) => {
-            println!("  ✅ Git repository found");
+            checks.push(DoctorCheck::pass("Git repository found"));
 
             // Check hooks
             match repo.list_hooks() {
                 Ok(hooks) => {
                     if hooks.is_empty() {
-                        println!("  ⚠️  No git hooks installed");
-                        *has_warnings = true;
+                        checks.push(DoctorCheck::fail(
+                            "Git hooks",
+                            "No git hooks installed - run 'peter-hook install' to install hooks",
+                        ));
                     } else {
-                        println!("  ✅ {} git hook(s) found", hooks.len());
-
                         // Check if managed by peter-hook
                         let mut managed_count = 0;
                         for hook_name in &hooks {
@@ -62,85 +64,78 @@ fn check_git_repository(has_errors: &mut bool, has_warnings: &mut bool) {
                         }
 
                         if managed_count == 0 {
-                            println!("  ⚠️  No hooks managed by peter-hook");
-                            println!("  ℹ️  Run 'peter-hook install' to install hooks");
-                            *has_warnings = true;
+                            checks.push(DoctorCheck::fail(
+                                format!("{} git hook(s) found", hooks.len()),
+                                "No hooks managed by peter-hook - run 'peter-hook install' to install hooks",
+                            ));
                         } else {
-                            println!("  ✅ {managed_count} hook(s) managed by peter-hook");
+                            checks.push(DoctorCheck::pass(format!(
+                                "{managed_count} hook(s) managed by peter-hook"
+                            )));
                         }
                     }
                 }
                 Err(e) => {
-                    println!("  ❌ Failed to list git hooks: {e}");
-                    *has_errors = true;
+                    checks.push(DoctorCheck::fail("List git hooks", format!("Failed: {e}")));
                 }
             }
         }
         Err(e) => {
-            println!("  ❌ Not in a git repository: {e}");
-            *has_errors = true;
+            checks.push(DoctorCheck::fail(
+                "Git repository",
+                format!("Not in a git repository: {e}"),
+            ));
         }
     }
+
+    checks
 }
 
-fn check_configuration(has_errors: &mut bool, has_warnings: &mut bool) {
-    println!("Configuration:");
+fn check_configuration() -> Vec<DoctorCheck> {
+    let mut checks = Vec::new();
     let resolver = HookResolver::new(std::env::current_dir().unwrap_or_default());
 
     match resolver.find_config_file() {
         Ok(Some(config_path)) => {
-            println!("  ✅ Config file: {}", config_path.display());
+            checks.push(DoctorCheck::pass(format!(
+                "Config file found: {}",
+                config_path.display()
+            )));
 
             // Try to parse it
             match HookConfig::from_file(&config_path) {
                 Ok(config) => {
-                    println!("  ✅ Config is valid");
-
                     let hook_names = config.get_hook_names();
                     if hook_names.is_empty() {
-                        println!("  ⚠️  No hooks or groups defined");
-                        *has_warnings = true;
+                        checks.push(DoctorCheck::fail(
+                            "Hook configuration",
+                            "No hooks or groups defined in hooks.toml",
+                        ));
                     } else {
-                        println!("  ✅ Found {} hook(s)/group(s)", hook_names.len());
+                        checks.push(DoctorCheck::pass(format!(
+                            "Found {} hook(s)/group(s)",
+                            hook_names.len()
+                        )));
                     }
                 }
                 Err(e) => {
-                    println!("  ❌ Config is invalid: {e}");
-                    *has_errors = true;
+                    checks.push(DoctorCheck::fail(
+                        "Config validation",
+                        format!("Invalid: {e}"),
+                    ));
                 }
             }
         }
         Ok(None) => {
-            println!("  ⚠️  No hooks.toml file found");
-            println!("  ℹ️  Create a hooks.toml file to configure peter-hook");
-            *has_warnings = true;
+            checks.push(DoctorCheck::fail(
+                "Configuration file",
+                "No hooks.toml found - create one to configure peter-hook",
+            ));
         }
         Err(e) => {
-            println!("  ❌ Failed to find config: {e}");
-            *has_errors = true;
+            checks.push(DoctorCheck::fail("Config search", format!("Failed: {e}")));
         }
     }
-}
 
-fn check_updates(has_warnings: &mut bool) {
-    println!("Updates:");
-    let repo_info = workhelix_cli_common::RepoInfo::new("tftio", "peter-hook", "v");
-    match workhelix_cli_common::doctor::check_for_updates(&repo_info, env!("CARGO_PKG_VERSION")) {
-        Ok(Some(latest)) => {
-            let current = env!("CARGO_PKG_VERSION");
-            println!("  ⚠️  Update available: v{latest} (current: v{current})");
-            println!("  💡 Run 'peter-hook update' to install the latest version");
-            *has_warnings = true;
-        }
-        Ok(None) => {
-            println!(
-                "  ✅ Running latest version (v{})",
-                env!("CARGO_PKG_VERSION")
-            );
-        }
-        Err(e) => {
-            println!("  ⚠️  Failed to check for updates: {e}");
-            *has_warnings = true;
-        }
-    }
+    checks
 }
