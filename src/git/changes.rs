@@ -82,9 +82,17 @@ impl GitChangeDetector {
         // Get staged changes (exclude deleted files)
         let staged_output = self.run_git_command(&["diff", "--cached", "--name-status"])?;
         for line in staged_output.lines() {
-            if let Some((status, filename)) = line.split_once('\t') {
+            if let Some((status, rest)) = line.split_once('\t') {
                 if !status.starts_with('D') {
                     // Skip deleted files
+                    // Handle renames (R) and copies (C): format is "status\told_name\tnew_name"
+                    // For renames/copies, we want the destination (new) file
+                    let filename = if status.starts_with('R') || status.starts_with('C') {
+                        // Split on tab to get old and new filenames, use the new one
+                        rest.split('\t').nth(1).unwrap_or(rest)
+                    } else {
+                        rest
+                    };
                     changed_files.insert(PathBuf::from(filename));
                 }
             }
@@ -93,9 +101,15 @@ impl GitChangeDetector {
         // Get unstaged changes (exclude deleted files)
         let unstaged_output = self.run_git_command(&["diff", "--name-status"])?;
         for line in unstaged_output.lines() {
-            if let Some((status, filename)) = line.split_once('\t') {
+            if let Some((status, rest)) = line.split_once('\t') {
                 if !status.starts_with('D') {
                     // Skip deleted files
+                    // Handle renames (R) and copies (C): format is "status\told_name\tnew_name"
+                    let filename = if status.starts_with('R') || status.starts_with('C') {
+                        rest.split('\t').nth(1).unwrap_or(rest)
+                    } else {
+                        rest
+                    };
                     changed_files.insert(PathBuf::from(filename));
                 }
             }
@@ -120,9 +134,15 @@ impl GitChangeDetector {
 
         let mut changed_files = Vec::new();
         for line in staged_output.lines() {
-            if let Some((status, filename)) = line.split_once('\t') {
+            if let Some((status, rest)) = line.split_once('\t') {
                 if !status.starts_with('D') {
                     // Skip deleted files
+                    // Handle renames (R) and copies (C): format is "status\told_name\tnew_name"
+                    let filename = if status.starts_with('R') || status.starts_with('C') {
+                        rest.split('\t').nth(1).unwrap_or(rest)
+                    } else {
+                        rest
+                    };
                     changed_files.push(PathBuf::from(filename));
                 }
             }
@@ -138,9 +158,15 @@ impl GitChangeDetector {
 
         let mut changed_files = Vec::new();
         for line in diff_output.lines() {
-            if let Some((status, filename)) = line.split_once('\t') {
+            if let Some((status, rest)) = line.split_once('\t') {
                 if !status.starts_with('D') {
                     // Skip deleted files
+                    // Handle renames (R) and copies (C): format is "status\told_name\tnew_name"
+                    let filename = if status.starts_with('R') || status.starts_with('C') {
+                        rest.split('\t').nth(1).unwrap_or(rest)
+                    } else {
+                        rest
+                    };
                     changed_files.push(PathBuf::from(filename));
                 }
             }
@@ -156,9 +182,15 @@ impl GitChangeDetector {
 
         let mut changed_files = Vec::new();
         for line in diff_output.lines() {
-            if let Some((status, filename)) = line.split_once('\t') {
+            if let Some((status, rest)) = line.split_once('\t') {
                 if !status.starts_with('D') {
                     // Skip deleted files
+                    // Handle renames (R) and copies (C): format is "status\told_name\tnew_name"
+                    let filename = if status.starts_with('R') || status.starts_with('C') {
+                        rest.split('\t').nth(1).unwrap_or(rest)
+                    } else {
+                        rest
+                    };
                     changed_files.push(PathBuf::from(filename));
                 }
             }
@@ -401,5 +433,161 @@ mod tests {
         let working_changes = detector.get_working_directory_changes().unwrap();
         assert!(working_changes.contains(&PathBuf::from("new.rs")));
         assert!(!working_changes.contains(&PathBuf::from("test.rs")));
+    }
+
+    #[test]
+    fn test_renamed_files_tracked() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo_dir = create_test_git_repo(temp_dir.path());
+        let detector = GitChangeDetector::new(&repo_dir).unwrap();
+
+        // Create, add, and commit a file
+        let old_file = repo_dir.join("old_name.rs");
+        fs::write(&old_file, "fn main() {}").unwrap();
+
+        Command::new("git")
+            .args(["add", "old_name.rs"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        Command::new("git")
+            .args(["commit", "-m", "Add file"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        // Rename the file and stage the rename
+        let new_file = repo_dir.join("new_name.rs");
+        std::fs::rename(&old_file, &new_file).unwrap();
+
+        Command::new("git")
+            .args(["add", "-A"]) // Stage rename
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        // Test staged changes - should include the NEW filename, not the old one
+        let staged_changes = detector.get_staged_changes().unwrap();
+        assert!(
+            staged_changes.contains(&PathBuf::from("new_name.rs")),
+            "Should contain the new filename after rename"
+        );
+        assert!(
+            !staged_changes.contains(&PathBuf::from("old_name.rs")),
+            "Should not contain the old filename after rename"
+        );
+
+        // Test working directory changes
+        let working_changes = detector.get_working_directory_changes().unwrap();
+        assert!(
+            working_changes.contains(&PathBuf::from("new_name.rs")),
+            "Working directory should contain the new filename"
+        );
+    }
+
+    #[test]
+    fn test_renamed_files_in_commit_range() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo_dir = create_test_git_repo(temp_dir.path());
+        let detector = GitChangeDetector::new(&repo_dir).unwrap();
+
+        // Create, add, and commit a file
+        let old_file = repo_dir.join("original.rs");
+        fs::write(&old_file, "fn main() {}").unwrap();
+
+        Command::new("git")
+            .args(["add", "original.rs"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        Command::new("git")
+            .args(["commit", "-m", "Add original file"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        // Get the commit hash
+        let first_commit = Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+        let first_commit_hash = String::from_utf8_lossy(&first_commit.stdout)
+            .trim()
+            .to_string();
+
+        // Rename the file and commit
+        let new_file = repo_dir.join("renamed.rs");
+        std::fs::rename(&old_file, &new_file).unwrap();
+
+        Command::new("git")
+            .args(["add", "-A"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        Command::new("git")
+            .args(["commit", "-m", "Rename file"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        // Test commit range - should show the NEW filename
+        let range_changes = detector
+            .get_commit_range_changes(&first_commit_hash, "HEAD")
+            .unwrap();
+
+        assert!(
+            range_changes.contains(&PathBuf::from("renamed.rs")),
+            "Commit range should contain the new filename after rename"
+        );
+        assert!(
+            !range_changes.contains(&PathBuf::from("original.rs")),
+            "Commit range should not contain the old filename"
+        );
+    }
+
+    #[test]
+    fn test_copied_files_tracked() {
+        let temp_dir = TempDir::new().unwrap();
+        let repo_dir = create_test_git_repo(temp_dir.path());
+        let detector = GitChangeDetector::new(&repo_dir).unwrap();
+
+        // Create, add, and commit a file
+        let original_file = repo_dir.join("template.rs");
+        fs::write(&original_file, "fn template() {}").unwrap();
+
+        Command::new("git")
+            .args(["add", "template.rs"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        Command::new("git")
+            .args(["commit", "-m", "Add template"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        // Copy the file (requires making a change to detect as copy)
+        let copied_file = repo_dir.join("copied.rs");
+        fs::copy(&original_file, &copied_file).unwrap();
+        // Modify the copy slightly so git detects it as a copy rather than identical
+        fs::write(&copied_file, "fn template() {} // modified").unwrap();
+
+        Command::new("git")
+            .args(["add", "copied.rs"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        // Test staged changes - should include the copied file
+        let staged_changes = detector.get_staged_changes().unwrap();
+        assert!(
+            staged_changes.contains(&PathBuf::from("copied.rs")),
+            "Should contain the copied filename"
+        );
     }
 }
