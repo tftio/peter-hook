@@ -701,6 +701,9 @@ fn validate_config(trace_imports: bool, json: bool) -> Result<()> {
                                 }
                             }
                         }
+
+                        // Display detailed hook composition
+                        print_hook_details(&config);
                     }
                     Err(e) => {
                         eprintln!("✗ Configuration is invalid: {e:#}");
@@ -721,6 +724,9 @@ fn validate_config(trace_imports: bool, json: bool) -> Result<()> {
                                 println!("    - {name}");
                             }
                         }
+
+                        // Display detailed hook composition
+                        print_hook_details(&config);
                     }
                     Err(e) => {
                         eprintln!("✗ Configuration is invalid: {e:#}");
@@ -735,6 +741,143 @@ fn validate_config(trace_imports: bool, json: bool) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Print detailed information about all hooks and groups in the configuration
+fn print_hook_details(config: &peter_hook::HookConfig) {
+    use peter_hook::config::{ExecutionType, HookCommand};
+
+    println!("\n═══════════════════════════════════════════════════════════");
+    println!("                HOOK COMPOSITION DETAILS");
+    println!("═══════════════════════════════════════════════════════════\n");
+
+    // Print individual hooks
+    if let Some(hooks) = &config.hooks {
+        if !hooks.is_empty() {
+            println!("📋 Individual Hooks:\n");
+            let mut sorted_hooks: Vec<_> = hooks.iter().collect();
+            sorted_hooks.sort_by_key(|(name, _)| *name);
+
+            for (name, hook) in sorted_hooks {
+                println!("┌─ 🔧 Hook: {name}");
+
+                // Command
+                let cmd_str = match &hook.command {
+                    HookCommand::Shell(cmd) => format!("shell: {cmd}"),
+                    HookCommand::Args(args) => format!("args: [{}]", args.join(", ")),
+                };
+                println!("│  Command: {cmd_str}");
+
+                // Description
+                if let Some(desc) = &hook.description {
+                    println!("│  Description: {desc}");
+                }
+
+                // Safety flag
+                let safety = if hook.modifies_repository {
+                    "⚠️  MODIFIES REPOSITORY (runs sequentially)"
+                } else {
+                    "✅ Read-only (can run in parallel)"
+                };
+                println!("│  Safety: {safety}");
+
+                // Execution type
+                let exec_type = match hook.execution_type {
+                    ExecutionType::PerFile => "per-file (files passed as arguments)",
+                    ExecutionType::InPlace => "in-place (runs once without file args)",
+                    ExecutionType::Other => "other (uses template variables)",
+                };
+                println!("│  Execution Type: {exec_type}");
+
+                // File patterns
+                if let Some(files) = &hook.files {
+                    println!("│  File Patterns: [{}]", files.join(", "));
+                } else if hook.run_always {
+                    println!("│  File Patterns: ⚡ run_always=true (ignores file changes)");
+                } else {
+                    println!("│  File Patterns: (none - runs on any file change)");
+                }
+
+                // Working directory
+                if let Some(workdir) = &hook.workdir {
+                    println!("│  Working Directory: {workdir}");
+                } else {
+                    println!("│  Working Directory: (config file directory)");
+                }
+
+                // Run at root flag
+                if hook.run_at_root {
+                    println!("│  Run Location: 📁 Repository root");
+                }
+
+                // Dependencies
+                if let Some(deps) = &hook.depends_on {
+                    println!("│  Dependencies: [{}]", deps.join(", "));
+                }
+
+                // Environment variables
+                if let Some(env) = &hook.env {
+                    if !env.is_empty() {
+                        println!("│  Environment Variables:");
+                        let mut sorted_env: Vec<_> = env.iter().collect();
+                        sorted_env.sort_by_key(|(k, _)| *k);
+                        for (key, value) in sorted_env {
+                            println!("│    {key} = {value}");
+                        }
+                    }
+                }
+
+                println!("└─────────────────────────────────────────────────────────\n");
+            }
+        }
+    }
+
+    // Print groups
+    if let Some(groups) = &config.groups {
+        if !groups.is_empty() {
+            println!("📦 Hook Groups:\n");
+            let mut sorted_groups: Vec<_> = groups.iter().collect();
+            sorted_groups.sort_by_key(|(name, _)| *name);
+
+            for (name, group) in sorted_groups {
+                println!("┌─ 🎯 Group: {name}");
+
+                // Description
+                if let Some(desc) = &group.description {
+                    println!("│  Description: {desc}");
+                }
+
+                // Placeholder flag
+                if group.placeholder == Some(true) {
+                    println!("│  Type: ⚙️  PLACEHOLDER (enables hierarchical resolution)");
+                } else {
+                    // Execution strategy
+                    let strategy = group.get_execution_strategy();
+                    let strategy_str = match strategy {
+                        peter_hook::config::ExecutionStrategy::Sequential => "sequential",
+                        peter_hook::config::ExecutionStrategy::Parallel => {
+                            "parallel (safe - respects modifies_repository)"
+                        }
+                        peter_hook::config::ExecutionStrategy::ForceParallel => {
+                            "force-parallel (⚠️  unsafe - ignores safety flags)"
+                        }
+                    };
+                    println!("│  Execution Strategy: {strategy_str}");
+                }
+
+                // Includes
+                if group.includes.is_empty() {
+                    println!("│  Includes: (none)");
+                } else {
+                    println!("│  Includes: [{}]", group.includes.join(", "));
+                }
+
+                println!("└─────────────────────────────────────────────────────────\n");
+            }
+        }
+    }
+
+    println!("═══════════════════════════════════════════════════════════");
 }
 
 /// Run hooks in lint mode

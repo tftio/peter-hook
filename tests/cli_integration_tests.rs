@@ -379,4 +379,3 @@ modifies_repository = false
     // Lint mode should work without git repo
     assert!(output.status.success() || output.status.code() == Some(1));
 }
-

@@ -66,7 +66,8 @@ fn check_git_repository() -> Vec<DoctorCheck> {
                         if managed_count == 0 {
                             checks.push(DoctorCheck::fail(
                                 format!("{} git hook(s) found", hooks.len()),
-                                "No hooks managed by peter-hook - run 'peter-hook install' to install hooks",
+                                "No hooks managed by peter-hook - run 'peter-hook install' to \
+                                 install hooks",
                             ));
                         } else {
                             checks.push(DoctorCheck::pass(format!(
