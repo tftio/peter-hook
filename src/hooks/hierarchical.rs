@@ -8,7 +8,7 @@
 use crate::{
     config::{ExecutionStrategy, HookConfig, HookDefinition},
     git::ChangeDetectionMode,
-    hooks::{HookResolver, ResolvedHooks, WorktreeContext},
+    hooks::{ResolvedHooks, WorktreeContext},
 };
 use anyhow::{Context, Result};
 use std::{
@@ -111,10 +111,7 @@ struct MergedConfig {
 /// # Errors
 ///
 /// Returns an error if config file parsing fails
-fn merge_configs_for_event(
-    config_paths: &[PathBuf],
-    event: &str,
-) -> Result<Option<MergedConfig>> {
+fn merge_configs_for_event(config_paths: &[PathBuf], event: &str) -> Result<Option<MergedConfig>> {
     if config_paths.is_empty() {
         return Ok(None);
     }
@@ -202,7 +199,8 @@ fn merge_configs_for_event(
 ///
 /// This function:
 /// 1. Collects all config files from nearest to root
-/// 2. Merges them (groups extend, hooks deduplicate, execution is most conservative)
+/// 2. Merges them (groups extend, hooks deduplicate, execution is most
+///    conservative)
 /// 3. Returns resolved hooks ready for execution
 ///
 /// # Arguments
@@ -408,12 +406,22 @@ pub fn resolve_hooks_hierarchically(
     };
 
     if changed_files.is_empty() {
-        // No files changed - check if there's a config from current directory
-        // This allows --dry-run and --all-files to work from subdirectories
-        let current_resolver = HookResolver::new(current_dir);
-        if let Some(resolved) = current_resolver.resolve_hooks(event)? {
+        // No files changed - use hierarchical resolution from current directory
+        // This ensures --dry-run and --all-files get merged configs from all levels
+        let config_paths = find_all_configs_for_file(current_dir, repo_root);
+        if config_paths.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        if let Some(resolved) = resolve_event_for_config(
+            &config_paths[0],
+            event,
+            repo_root,
+            None, // No files to filter
+            worktree_context,
+        )? {
             return Ok(vec![ConfigGroup {
-                config_path: resolved.config_path.clone(),
+                config_path: config_paths[0].clone(),
                 files: Vec::new(),
                 resolved_hooks: resolved,
             }]);
