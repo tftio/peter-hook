@@ -5,6 +5,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// Global debug state
 static DEBUG_ENABLED: AtomicBool = AtomicBool::new(false);
 
+/// Global trace state
+static TRACE_ENABLED: AtomicBool = AtomicBool::new(false);
+
 /// Enable debug mode
 pub fn enable() {
     DEBUG_ENABLED.store(true, Ordering::Relaxed);
@@ -15,10 +18,36 @@ pub fn is_enabled() -> bool {
     DEBUG_ENABLED.load(Ordering::Relaxed)
 }
 
+/// Enable trace mode
+pub fn enable_trace() {
+    TRACE_ENABLED.store(true, Ordering::Relaxed);
+}
+
+/// Check if trace mode is enabled
+pub fn is_trace_enabled() -> bool {
+    TRACE_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Print trace message if trace mode is enabled
+#[macro_export]
+macro_rules! trace {
+    ($($arg:tt)*) => {
+        if $crate::debug::is_trace_enabled() {
+            eprintln!("[TRACE] {}", format!($($arg)*));
+        }
+    };
+}
+
 /// Disable debug mode (for testing)
 #[cfg(test)]
 pub fn disable() {
     DEBUG_ENABLED.store(false, Ordering::Relaxed);
+}
+
+/// Disable trace mode (for testing)
+#[cfg(test)]
+pub fn disable_trace() {
+    TRACE_ENABLED.store(false, Ordering::Relaxed);
 }
 
 #[cfg(test)]

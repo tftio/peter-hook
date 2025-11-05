@@ -9,6 +9,7 @@ use crate::{
     config::{ExecutionStrategy, HookConfig, HookDefinition},
     git::ChangeDetectionMode,
     hooks::{ResolvedHooks, WorktreeContext},
+    trace,
 };
 use anyhow::{Context, Result};
 use std::{
@@ -92,6 +93,117 @@ struct MergedConfig {
     nearest_config_path: PathBuf,
 }
 
+/// Collect hook names and execution strategies from all configs (Phase 1)
+///
+/// Process from ROOT to NEAREST to build up the merged includes list
+fn collect_hook_names_and_strategies(
+    config_paths: &[PathBuf],
+    event: &str,
+) -> Result<(Vec<String>, Vec<ExecutionStrategy>, bool)> {
+    let mut all_hook_names: Vec<String> = Vec::new();
+    let mut execution_strategies: Vec<ExecutionStrategy> = Vec::new();
+    let mut event_found = false;
+
+    trace!("Phase 1: Collecting hook names from ROOT to NEAREST");
+    for config_path in config_paths.iter().rev() {
+        trace!("  Processing: {}", config_path.display());
+        let config = HookConfig::from_file(config_path)
+            .with_context(|| format!("Failed to load config: {}", config_path.display()))?;
+
+        // Check if this config defines the event as a direct hook
+        if let Some(hooks) = &config.hooks {
+            if hooks.get(event).is_some() {
+                trace!("    Found direct hook '{}'", event);
+                event_found = true;
+                if !all_hook_names.contains(&event.to_string()) {
+                    all_hook_names.push(event.to_string());
+                    trace!("      Added to hook list");
+                }
+                execution_strategies.push(ExecutionStrategy::Sequential);
+            }
+        }
+
+        // Check if this config defines the event as a group
+        if let Some(groups) = &config.groups {
+            if let Some(group) = groups.get(event) {
+                trace!(
+                    "    Found group '{}' with {} includes",
+                    event,
+                    group.includes.len()
+                );
+                event_found = true;
+                let strategy = group.get_execution_strategy();
+                trace!("      Strategy: {:?}", strategy);
+                execution_strategies.push(strategy);
+
+                // Extend the includes list (child adds to parent)
+                for include_name in &group.includes {
+                    if all_hook_names.contains(include_name) {
+                        trace!("      Skipped duplicate: '{}'", include_name);
+                    } else {
+                        all_hook_names.push(include_name.clone());
+                        trace!("      Added include: '{}'", include_name);
+                    }
+                }
+            }
+        }
+    }
+
+    Ok((all_hook_names, execution_strategies, event_found))
+}
+
+/// Find hook definitions for collected hook names (Phase 2)
+///
+/// Search from NEAREST to ROOT so that nearest definitions win
+fn find_hook_definitions(
+    config_paths: &[PathBuf],
+    hook_names: &[String],
+) -> Result<HashMap<String, HookDefinition>> {
+    let mut hook_definitions: HashMap<String, HookDefinition> = HashMap::new();
+
+    trace!("Phase 2: Finding hook definitions from NEAREST to ROOT");
+    for hook_name in hook_names {
+        trace!("  Looking for definition of '{}'", hook_name);
+        for config_path in config_paths {
+            let config = HookConfig::from_file(config_path)
+                .with_context(|| format!("Failed to load config: {}", config_path.display()))?;
+
+            if let Some(hooks) = &config.hooks {
+                if let Some(hook_def) = hooks.get(hook_name) {
+                    if hook_definitions.contains_key(hook_name) {
+                        trace!("    Already have definition from nearer config, skipping");
+                    } else {
+                        hook_definitions
+                            .entry(hook_name.clone())
+                            .or_insert_with(|| hook_def.clone());
+                        trace!("    ✓ Found in {} (WINS)", config_path.display());
+                    }
+                    break;
+                }
+            }
+        }
+        if !hook_definitions.contains_key(hook_name) {
+            trace!("    ✗ Definition not found in any config!");
+        }
+    }
+
+    Ok(hook_definitions)
+}
+
+/// Merge execution strategies: if ANY config says sequential, use sequential
+fn merge_execution_strategies(strategies: &[ExecutionStrategy]) -> ExecutionStrategy {
+    if strategies
+        .iter()
+        .any(|s| matches!(s, ExecutionStrategy::Sequential))
+    {
+        trace!("Merged strategy: Sequential (at least one config required it)");
+        ExecutionStrategy::Sequential
+    } else {
+        trace!("Merged strategy: Parallel (all configs allow it)");
+        ExecutionStrategy::Parallel
+    }
+}
+
 /// Merge multiple config files for a specific event
 ///
 /// Merges configurations from nearest to root:
@@ -116,77 +228,42 @@ fn merge_configs_for_event(config_paths: &[PathBuf], event: &str) -> Result<Opti
         return Ok(None);
     }
 
-    let mut all_hook_names: Vec<String> = Vec::new();
-    let mut execution_strategies: Vec<ExecutionStrategy> = Vec::new();
-    let mut hook_definitions: HashMap<String, HookDefinition> = HashMap::new();
-    let mut event_found = false;
-
-    // PHASE 1: Collect all hook names and execution strategies from all configs
-    // Process from ROOT to NEAREST to build up the merged includes list
-    for config_path in config_paths.iter().rev() {
-        let config = HookConfig::from_file(config_path)
-            .with_context(|| format!("Failed to load config: {}", config_path.display()))?;
-
-        // Check if this config defines the event as a direct hook
-        if let Some(hooks) = &config.hooks {
-            if let Some(_hook_def) = hooks.get(event) {
-                event_found = true;
-                if !all_hook_names.contains(&event.to_string()) {
-                    all_hook_names.push(event.to_string());
-                }
-                execution_strategies.push(ExecutionStrategy::Sequential); // Direct hooks are sequential
-            }
-        }
-
-        // Check if this config defines the event as a group
-        if let Some(groups) = &config.groups {
-            if let Some(group) = groups.get(event) {
-                event_found = true;
-                execution_strategies.push(group.get_execution_strategy());
-
-                // Extend the includes list (child adds to parent)
-                for include_name in &group.includes {
-                    // Add to list if not already present (maintains order, root first)
-                    if !all_hook_names.contains(include_name) {
-                        all_hook_names.push(include_name.clone());
-                    }
-                }
-            }
-        }
+    trace!(
+        "--- Merging {} configs for event '{}' ---",
+        config_paths.len(),
+        event
+    );
+    for (i, path) in config_paths.iter().enumerate() {
+        trace!("  Merge input[{}]: {}", i, path.display());
     }
 
+    // Phase 1: Collect hook names and execution strategies
+    let (all_hook_names, execution_strategies, event_found) =
+        collect_hook_names_and_strategies(config_paths, event)?;
+
     if !event_found {
+        trace!("Event '{}' not found in any config", event);
         return Ok(None);
     }
 
-    // PHASE 2: Find hook definitions for all collected hook names
-    // Search from NEAREST to ROOT so that nearest definitions win
-    for hook_name in &all_hook_names {
-        for config_path in config_paths {
-            let config = HookConfig::from_file(config_path)
-                .with_context(|| format!("Failed to load config: {}", config_path.display()))?;
+    trace!(
+        "Phase 1 complete: {} total hook names collected: {:?}",
+        all_hook_names.len(),
+        all_hook_names
+    );
 
-            if let Some(hooks) = &config.hooks {
-                if let Some(hook_def) = hooks.get(hook_name) {
-                    // Insert if not already present (first one found = nearest = wins)
-                    hook_definitions
-                        .entry(hook_name.clone())
-                        .or_insert_with(|| hook_def.clone());
-                    break; // Found definition, stop searching for this hook
-                }
-            }
-        }
-    }
+    // Phase 2: Find hook definitions
+    let hook_definitions = find_hook_definitions(config_paths, &all_hook_names)?;
 
-    // Merge execution strategies: if ANY config says sequential, use sequential
-    let execution_strategy = if execution_strategies
-        .iter()
-        .any(|s| matches!(s, ExecutionStrategy::Sequential))
-    {
-        ExecutionStrategy::Sequential
-    } else {
-        ExecutionStrategy::Parallel
-    };
+    // Phase 3: Merge execution strategies
+    let execution_strategy = merge_execution_strategies(&execution_strategies);
+
+    trace!(
+        "Merge complete: {} hook definitions, strategy={:?}",
+        hook_definitions.len(),
+        execution_strategy
+    );
+    trace!("--- End Config Merge ---");
 
     Ok(Some(MergedConfig {
         hooks: hook_definitions,
@@ -317,6 +394,12 @@ pub fn group_files_by_config(
     event: &str,
     worktree_context: &WorktreeContext,
 ) -> Result<Vec<ConfigGroup>> {
+    trace!("--- Grouping Files by Config ---");
+    trace!(
+        "Grouping {} files by their nearest config",
+        changed_files.len()
+    );
+
     // Map from config path to list of files
     let mut config_map: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
 
@@ -331,19 +414,28 @@ pub fn group_files_by_config(
         // Find all configs and use the nearest one for grouping
         let configs = find_all_configs_for_file(&absolute_file, repo_root);
         if let Some(nearest_config) = configs.first() {
+            trace!("  {} -> {}", file.display(), nearest_config.display());
             config_map
                 .entry(nearest_config.clone())
                 .or_default()
                 .push(file.clone());
         } else {
+            trace!("  {} -> NO CONFIG (will be skipped)", file.display());
             // No config found for this file - it will be skipped
             // This is expected behavior for files without hook configuration
         }
     }
 
+    trace!("Found {} unique config locations", config_map.len());
+
     // Now resolve hooks for each config (merging with parent configs)
     let mut groups = Vec::new();
     for (config_path, files) in config_map {
+        trace!(
+            "Resolving hooks for config: {} ({} files)",
+            config_path.display(),
+            files.len()
+        );
         // Resolve hooks for this config and event (will merge with parents)
         if let Some(resolved_hooks) = resolve_event_for_config(
             &config_path,
@@ -352,14 +444,21 @@ pub fn group_files_by_config(
             Some(&files),
             worktree_context,
         )? {
+            trace!(
+                "  ✓ Resolved {} hooks for this group",
+                resolved_hooks.hooks.len()
+            );
             groups.push(ConfigGroup {
                 config_path,
                 files,
                 resolved_hooks,
             });
+        } else {
+            trace!("  ✗ Event '{}' not defined for this config", event);
         }
     }
 
+    trace!("--- End File Grouping ---");
     Ok(groups)
 }
 
@@ -392,27 +491,58 @@ pub fn resolve_hooks_hierarchically(
     current_dir: &Path,
     worktree_context: &WorktreeContext,
 ) -> Result<Vec<ConfigGroup>> {
+    trace!("=== Hierarchical Resolution Started ===");
+    trace!("Event: {}", event);
+    trace!("Repo root: {}", repo_root.display());
+    trace!("Current dir: {}", current_dir.display());
+    trace!("Change mode: {:?}", change_mode);
+
     // Get changed files if we have a detection mode
     let changed_files = if let Some(mode) = change_mode {
+        trace!("Detecting changed files with mode: {:?}", mode);
         let detector = crate::git::GitChangeDetector::new(repo_root)
             .context("Failed to create git change detector")?;
-        detector
+        let files = detector
             .get_changed_files(&mode)
-            .context("Failed to detect changed files")?
+            .context("Failed to detect changed files")?;
+        trace!("Detected {} changed files", files.len());
+        for (i, file) in files.iter().enumerate().take(10) {
+            trace!("  [{}] {}", i + 1, file.display());
+        }
+        if files.len() > 10 {
+            trace!("  ... and {} more files", files.len() - 10);
+        }
+        files
     } else {
+        trace!("No change detection mode - using --all-files or dry-run");
         // If no change mode (--all-files), use current directory to find config
         // and return empty files list to trigger run_always hooks
         Vec::new()
     };
 
     if changed_files.is_empty() {
+        trace!("No changed files - resolving from current directory");
         // No files changed - use hierarchical resolution from current directory
         // This ensures --dry-run and --all-files get merged configs from all levels
         let config_paths = find_all_configs_for_file(current_dir, repo_root);
+        trace!(
+            "Found {} config files from current dir to root",
+            config_paths.len()
+        );
+        for (i, path) in config_paths.iter().enumerate() {
+            trace!("  Config[{}]: {}", i, path.display());
+        }
+
         if config_paths.is_empty() {
+            trace!("No config files found - returning empty result");
             return Ok(Vec::new());
         }
 
+        trace!(
+            "Resolving event '{}' from nearest config: {}",
+            event,
+            config_paths[0].display()
+        );
         if let Some(resolved) = resolve_event_for_config(
             &config_paths[0],
             event,
@@ -420,16 +550,37 @@ pub fn resolve_hooks_hierarchically(
             None, // No files to filter
             worktree_context,
         )? {
+            trace!(
+                "✓ Event resolved successfully with {} hooks",
+                resolved.hooks.len()
+            );
             return Ok(vec![ConfigGroup {
                 config_path: config_paths[0].clone(),
                 files: Vec::new(),
                 resolved_hooks: resolved,
             }]);
         }
+        trace!("✗ Event '{}' not defined in any config", event);
         return Ok(Vec::new());
     }
 
-    group_files_by_config(&changed_files, repo_root, event, worktree_context)
+    trace!(
+        "Grouping {} changed files by their nearest config",
+        changed_files.len()
+    );
+    let groups = group_files_by_config(&changed_files, repo_root, event, worktree_context)?;
+    trace!("Created {} config groups", groups.len());
+    for (i, group) in groups.iter().enumerate() {
+        trace!(
+            "  Group[{}]: {} (with {} files, {} hooks)",
+            i,
+            group.config_path.display(),
+            group.files.len(),
+            group.resolved_hooks.hooks.len()
+        );
+    }
+    trace!("=== Hierarchical Resolution Complete ===");
+    Ok(groups)
 }
 
 #[cfg(test)]

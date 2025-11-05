@@ -12,6 +12,10 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub debug: bool,
 
+    /// Enable trace mode (show hook resolution decisions)
+    #[arg(long, global = true)]
+    pub trace: bool,
+
     /// Subcommand to execute
     #[command(subcommand)]
     pub command: Commands,
