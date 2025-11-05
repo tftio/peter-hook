@@ -8,9 +8,7 @@
 //! - Malicious filenames
 //! - Whitelist bypass attempts
 
-use std::fs;
-use std::os::unix::fs::symlink;
-use std::process::Command;
+use std::{fs, os::unix::fs::symlink, process::Command};
 use tempfile::TempDir;
 
 /// Helper to create a git repository with configuration
@@ -179,12 +177,17 @@ includes = ["env-leak-attempt"]
 
     // Should show error about unknown template variable
     assert!(
-        combined.contains("Unknown template variable") || combined.contains("USER") || combined.contains("SSH_AUTH_SOCK"),
+        combined.contains("Unknown template variable")
+            || combined.contains("USER")
+            || combined.contains("SSH_AUTH_SOCK"),
         "Should reject non-whitelisted environment variables.\nOutput: {combined}"
     );
 
     // Hook should fail
-    assert!(!output.status.success(), "Should fail on unknown template variable");
+    assert!(
+        !output.status.success(),
+        "Should fail on unknown template variable"
+    );
 }
 
 #[test]
@@ -217,8 +220,8 @@ includes = ["file-processor"]
     // Create files with evil names (shell-quote them for filesystem)
     for name in &evil_names {
         // Only create files with names that are valid for the filesystem
-        let safe_name = name.replace('/', "_").replace('\0', "_");
-        if let Ok(()) = fs::write(repo_path.join(&safe_name), "content") {
+        let safe_name = name.replace(['/', '\0'], "_");
+        if matches!(fs::write(repo_path.join(&safe_name), "content"), Ok(())) {
             Command::new("git")
                 .args(["add", &safe_name])
                 .current_dir(repo_path)
@@ -384,7 +387,8 @@ includes = ["special-chars"]
     // Should handle special characters safely via CHANGED_FILES_FILE
     assert!(
         output.status.success(),
-        "Should handle files with special characters via CHANGED_FILES_FILE.\nStdout: {stdout}\nStderr: {stderr}"
+        "Should handle files with special characters via CHANGED_FILES_FILE.\nStdout: \
+         {stdout}\nStderr: {stderr}"
     );
 }
 
@@ -426,7 +430,9 @@ includes = ["case-test"]
 
     // Should reject lowercase/mixed case (whitelist is case-sensitive)
     assert!(
-        combined.contains("Unknown template variable") || combined.contains("hook_dir") || combined.contains("Hook_Dir"),
+        combined.contains("Unknown template variable")
+            || combined.contains("hook_dir")
+            || combined.contains("Hook_Dir"),
         "Template variables should be case-sensitive.\nOutput: {combined}"
     );
 

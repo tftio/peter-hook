@@ -7,8 +7,7 @@
 //! - Partial success scenarios
 //! - Error message handling
 
-use std::fs;
-use std::process::Command;
+use std::{fs, process::Command};
 use tempfile::TempDir;
 
 /// Helper to create a git repository with configuration
@@ -114,7 +113,10 @@ execution_strategy = "parallel"
     );
 
     // Overall command should fail
-    assert!(!output.status.success(), "Command should fail when any hook fails");
+    assert!(
+        !output.status.success(),
+        "Command should fail when any hook fails"
+    );
 }
 
 #[test]
@@ -292,7 +294,9 @@ execution_strategy = "sequential"
 
     // Should show timeout error
     assert!(
-        combined.contains("timeout") || combined.contains("exceeded") || combined.contains("killed"),
+        combined.contains("timeout")
+            || combined.contains("exceeded")
+            || combined.contains("killed"),
         "Should show timeout error.\nOutput: {combined}"
     );
 
@@ -394,7 +398,9 @@ description = "Nonexistent command"
 
     // Should show clear error about missing command
     assert!(
-        combined.contains("Failed") || combined.contains("not found") || combined.contains("nonexistent"),
+        combined.contains("Failed")
+            || combined.contains("not found")
+            || combined.contains("nonexistent"),
         "Should show command not found error.\nOutput: {combined}"
     );
 
@@ -608,7 +614,9 @@ execution_strategy = "parallel"
 
     // All failures should appear in output (or at least hook names)
     let failure_count = (1..=3)
-        .filter(|i| combined.contains(&format!("fail-{i}")) || combined.contains(&format!("Fail {i}")))
+        .filter(|i| {
+            combined.contains(&format!("fail-{i}")) || combined.contains(&format!("Fail {i}"))
+        })
         .count();
 
     assert!(

@@ -6,8 +6,7 @@
 //! - Respect custom timeout values
 //! - Include partial output in timeout errors
 
-use std::fs;
-use std::process::Command;
+use std::{fs, process::Command};
 use tempfile::TempDir;
 
 /// Helper to create a git repository with configuration

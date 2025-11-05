@@ -6,7 +6,8 @@
 /// Determine if a git hook type can provide a list of changed files
 ///
 /// Some git hooks operate on files (pre-commit, pre-push, etc.) while others
-/// operate on other artifacts like commit messages (commit-msg, prepare-commit-msg).
+/// operate on other artifacts like commit messages (commit-msg,
+/// prepare-commit-msg).
 ///
 /// Hooks that can provide files:
 /// - pre-commit: staged files

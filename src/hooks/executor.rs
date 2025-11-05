@@ -66,7 +66,8 @@ impl HookExecutor {
     ///
     /// 1. Groups are processed in order
     /// 2. Each group executes its hooks according to its execution strategy
-    /// 3. **On failure**: Execution stops immediately; remaining groups are skipped
+    /// 3. **On failure**: Execution stops immediately; remaining groups are
+    ///    skipped
     /// 4. **On success**: Proceeds to the next group
     ///
     /// This follows traditional git hook behavior where any failure blocks the
@@ -671,12 +672,16 @@ impl HookExecutor {
     }
 
     /// Execute command parts with proper setup
+    #[allow(clippy::too_many_lines)]
     fn execute_command_parts(
         name: &str,
         hook: &ResolvedHook,
         worktree_context: &crate::hooks::resolver::WorktreeContext,
         command_parts: &[String],
     ) -> Result<ExecutionResult> {
+        use std::io::Read;
+        use wait_timeout::ChildExt;
+
         if command_parts.is_empty() {
             return Err(anyhow::anyhow!("Empty command for hook: {name}"));
         }
@@ -740,9 +745,6 @@ impl HookExecutor {
         }
 
         // Execute command with timeout
-        use std::io::Read;
-        use wait_timeout::ChildExt;
-
         let timeout = std::time::Duration::from_secs(hook.definition.timeout_seconds);
         let mut child = command
             .spawn()
@@ -771,37 +773,33 @@ impl HookExecutor {
             .wait_timeout(timeout)
             .with_context(|| format!("Failed to wait for hook command: {name}"))?;
 
-        let (exit_code, stdout, stderr, success) = match status_option {
-            Some(status) => {
-                // Process finished within timeout - collect output from threads
-                let stdout_buf = stdout_thread.join().unwrap_or_default();
-                let stderr_buf = stderr_thread.join().unwrap_or_default();
+        let (exit_code, stdout, stderr, success) = if let Some(status) = status_option {
+            // Process finished within timeout - collect output from threads
+            let stdout_buf = stdout_thread.join().unwrap_or_default();
+            let stderr_buf = stderr_thread.join().unwrap_or_default();
 
-                let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
-                let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
-                let exit_code = status.code().unwrap_or(-1);
-                let success = status.success();
+            let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
+            let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
+            let exit_code = status.code().unwrap_or(-1);
+            let success = status.success();
 
-                (exit_code, stdout, stderr, success)
-            }
-            None => {
-                // Timeout occurred - kill the process
-                let _ = child.kill();
-                let _ = child.wait(); // Reap the process
+            (exit_code, stdout, stderr, success)
+        } else {
+            // Timeout occurred - kill the process
+            let _ = child.kill();
+            let _ = child.wait(); // Reap the process
 
-                // Still try to collect partial output
-                let stdout_buf = stdout_thread.join().unwrap_or_default();
-                let stderr_buf = stderr_thread.join().unwrap_or_default();
-                let stdout = String::from_utf8_lossy(&stdout_buf);
-                let stderr = String::from_utf8_lossy(&stderr_buf);
+            // Still try to collect partial output
+            let stdout_buf = stdout_thread.join().unwrap_or_default();
+            let stderr_buf = stderr_thread.join().unwrap_or_default();
+            let stdout = String::from_utf8_lossy(&stdout_buf);
+            let stderr = String::from_utf8_lossy(&stderr_buf);
 
-                return Err(anyhow::anyhow!(
-                    "Hook '{name}' exceeded timeout of {} seconds and was killed\n\
-                     Partial stdout: {stdout}\n\
-                     Partial stderr: {stderr}",
-                    hook.definition.timeout_seconds
-                ));
-            }
+            return Err(anyhow::anyhow!(
+                "Hook '{name}' exceeded timeout of {} seconds and was killed\nPartial stdout: \
+                 {stdout}\nPartial stderr: {stderr}",
+                hook.definition.timeout_seconds
+            ));
         };
 
         // Debug output for result
@@ -1048,12 +1046,16 @@ impl HookExecutor {
     }
 
     /// Original hook execution logic (for Other execution type)
+    #[allow(clippy::too_many_lines)]
     fn execute_original_hook(
         name: &str,
         hook: &ResolvedHook,
         worktree_context: &crate::hooks::resolver::WorktreeContext,
         changed_files: Option<&[PathBuf]>,
     ) -> Result<ExecutionResult> {
+        use std::io::Read;
+        use wait_timeout::ChildExt;
+
         // Create template resolver with worktree context
         let config_dir = hook
             .source_file
@@ -1120,9 +1122,6 @@ impl HookExecutor {
         }
 
         // Execute command with timeout
-        use std::io::Read;
-        use wait_timeout::ChildExt;
-
         let timeout = std::time::Duration::from_secs(hook.definition.timeout_seconds);
         let mut child = command
             .spawn()
@@ -1151,42 +1150,38 @@ impl HookExecutor {
             .wait_timeout(timeout)
             .with_context(|| format!("Failed to wait for hook command: {name}"))?;
 
-        let (exit_code, stdout, stderr, success) = match status_option {
-            Some(status) => {
-                // Process finished within timeout - collect output from threads
-                let stdout_buf = stdout_thread.join().unwrap_or_default();
-                let stderr_buf = stderr_thread.join().unwrap_or_default();
+        let (exit_code, stdout, stderr, success) = if let Some(status) = status_option {
+            // Process finished within timeout - collect output from threads
+            let stdout_buf = stdout_thread.join().unwrap_or_default();
+            let stderr_buf = stderr_thread.join().unwrap_or_default();
 
-                let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
-                let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
-                let exit_code = status.code().unwrap_or(-1);
-                let success = status.success();
+            let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
+            let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
+            let exit_code = status.code().unwrap_or(-1);
+            let success = status.success();
 
-                (exit_code, stdout, stderr, success)
+            (exit_code, stdout, stderr, success)
+        } else {
+            // Timeout occurred - kill the process
+            let _ = child.kill();
+            let _ = child.wait(); // Reap the process
+
+            // Still try to collect partial output
+            let stdout_buf = stdout_thread.join().unwrap_or_default();
+            let stderr_buf = stderr_thread.join().unwrap_or_default();
+            let stdout = String::from_utf8_lossy(&stdout_buf);
+            let stderr = String::from_utf8_lossy(&stderr_buf);
+
+            // Cleanup temp file before returning error
+            if let Some(p) = changed_files_file {
+                let _ = std::fs::remove_file(p);
             }
-            None => {
-                // Timeout occurred - kill the process
-                let _ = child.kill();
-                let _ = child.wait(); // Reap the process
 
-                // Still try to collect partial output
-                let stdout_buf = stdout_thread.join().unwrap_or_default();
-                let stderr_buf = stderr_thread.join().unwrap_or_default();
-                let stdout = String::from_utf8_lossy(&stdout_buf);
-                let stderr = String::from_utf8_lossy(&stderr_buf);
-
-                // Cleanup temp file before returning error
-                if let Some(p) = changed_files_file {
-                    let _ = std::fs::remove_file(p);
-                }
-
-                return Err(anyhow::anyhow!(
-                    "Hook '{name}' exceeded timeout of {} seconds and was killed\n\
-                     Partial stdout: {stdout}\n\
-                     Partial stderr: {stderr}",
-                    hook.definition.timeout_seconds
-                ));
-            }
+            return Err(anyhow::anyhow!(
+                "Hook '{name}' exceeded timeout of {} seconds and was killed\nPartial stdout: \
+                 {stdout}\nPartial stderr: {stderr}",
+                hook.definition.timeout_seconds
+            ));
         };
 
         // Cleanup temp file, if any

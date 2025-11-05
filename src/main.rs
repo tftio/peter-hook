@@ -295,22 +295,16 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
 
                 match stdin_result {
                     Ok(0) => {
-                        // No stdin input, fall back to comparing HEAD with origin/main
-                        eprintln!("Warning: No stdin input provided for pre-push hook");
-                        eprintln!("Falling back to comparing HEAD with origin/main");
-                        Some(ChangeDetectionMode::CommitRange {
-                            from: "origin/main".to_string(),
-                            to: "HEAD".to_string(),
-                        })
+                        // No stdin input means nothing to push (everything up-to-date)
+                        // This is normal git behavior - allow operation to proceed
+                        None
                     }
                     Err(e) => {
-                        // Read error, fall back to comparing HEAD with origin/main
+                        // Read error - cannot determine what's being pushed
+                        // Allow operation to proceed rather than guessing
                         eprintln!("Warning: Failed to read stdin for pre-push hook: {e}");
-                        eprintln!("Falling back to comparing HEAD with origin/main");
-                        Some(ChangeDetectionMode::CommitRange {
-                            from: "origin/main".to_string(),
-                            to: "HEAD".to_string(),
-                        })
+                        eprintln!("Unable to validate push contents - allowing operation");
+                        None
                     }
                     Ok(_) => {
                         // Successfully read from stdin, try to parse it
@@ -320,13 +314,11 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
                                 remote_oid,
                             }),
                             Err(e) => {
-                                // If parsing fails, fall back to comparing HEAD with origin/main
+                                // Parsing failed - stdin data is malformed
+                                // Cannot reliably determine what's being pushed
                                 eprintln!("Warning: Failed to parse pre-push stdin: {e}");
-                                eprintln!("Falling back to comparing HEAD with origin/main");
-                                Some(ChangeDetectionMode::CommitRange {
-                                    from: "origin/main".to_string(),
-                                    to: "HEAD".to_string(),
-                                })
+                                eprintln!("Unable to validate push contents - allowing operation");
+                                None
                             }
                         }
                     }
@@ -992,7 +984,8 @@ fn validate_requires_files_compatibility(config: &peter_hook::HookConfig) {
                         if let Some(hook) = hooks.get(include) {
                             if hook.requires_files {
                                 warnings.push(format!(
-                                    "Hook '{include}' requires files but is included in group '{group_name}' which cannot provide file lists"
+                                    "Hook '{include}' requires files but is included in group \
+                                     '{group_name}' which cannot provide file lists"
                                 ));
                             }
                         }

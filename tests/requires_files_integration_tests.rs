@@ -6,8 +6,7 @@
 //! - Show warnings during validate
 //! - Work correctly with hierarchical configs
 
-use std::fs;
-use std::process::Command;
+use std::{fs, process::Command};
 use tempfile::TempDir;
 
 /// Helper to create a git repository with configuration
@@ -100,11 +99,15 @@ description = "Commit message hooks"
     // The output should NOT contain "Running test hook"
     assert!(
         !stdout.contains("Running test hook") && !stderr.contains("Running test hook"),
-        "Hook with requires_files=true should be skipped in commit-msg context.\nStdout: {stdout}\nStderr: {stderr}"
+        "Hook with requires_files=true should be skipped in commit-msg context.\nStdout: \
+         {stdout}\nStderr: {stderr}"
     );
 
     // Should succeed (exit 0) because hook was skipped
-    assert!(output.status.success(), "Command should succeed when hook is skipped");
+    assert!(
+        output.status.success(),
+        "Command should succeed when hook is skipped"
+    );
 }
 
 #[test]
@@ -189,7 +192,8 @@ description = "Pre-commit hooks"
     // Hook should be skipped when --all-files is used
     assert!(
         !stdout.contains("Should not run") && !stderr.contains("Should not run"),
-        "Hook with requires_files=true should be skipped with --all-files flag.\nStdout: {stdout}\nStderr: {stderr}"
+        "Hook with requires_files=true should be skipped with --all-files flag.\nStdout: \
+         {stdout}\nStderr: {stderr}"
     );
 }
 

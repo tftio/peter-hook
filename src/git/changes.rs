@@ -153,7 +153,8 @@ impl GitChangeDetector {
 
     /// Get files changed in push (compare local OID with remote OID)
     fn get_push_changes(&self, remote_oid: &str, local_oid: &str) -> Result<Vec<PathBuf>> {
-        let diff_output = self.run_git_command(&["diff", "--name-status", remote_oid, local_oid])?;
+        let diff_output =
+            self.run_git_command(&["diff", "--name-status", remote_oid, local_oid])?;
 
         let mut changed_files = Vec::new();
         for line in diff_output.lines() {
@@ -228,11 +229,12 @@ impl GitChangeDetector {
 /// `refs/heads/main 67890abc... refs/heads/main 12345def...`
 ///
 /// This function parses the first line and extracts the local and remote OIDs.
-/// If the remote OID is all zeros (0000000...), it means the remote branch doesn't
-/// exist yet (new branch push), so we use an empty tree as the base.
+/// If the remote OID is all zeros (0000000...), it means the remote branch
+/// doesn't exist yet (new branch push), so we use an empty tree as the base.
 ///
 /// # Arguments
-/// * `stdin_content` - The content from stdin (typically from `git_args` passed to the hook)
+/// * `stdin_content` - The content from stdin (typically from `git_args` passed
+///   to the hook)
 ///
 /// # Returns
 /// A tuple of (`local_oid`, `remote_oid`) on success
@@ -258,7 +260,8 @@ fn is_valid_oid(oid: &str) -> bool {
 /// A tuple of (`local_oid`, `remote_oid`) on success
 ///
 /// # Errors
-/// Returns an error if the stdin format is invalid, cannot be parsed, or OIDs are malformed
+/// Returns an error if the stdin format is invalid, cannot be parsed, or OIDs
+/// are malformed
 pub fn parse_push_stdin(stdin_content: &str) -> Result<(String, String)> {
     let line = stdin_content
         .lines()
@@ -268,7 +271,8 @@ pub fn parse_push_stdin(stdin_content: &str) -> Result<(String, String)> {
     let parts: Vec<&str> = line.split_whitespace().collect();
     if parts.len() < 4 {
         return Err(anyhow::anyhow!(
-            "Invalid pre-push stdin format. Expected: <local ref> <local oid> <remote ref> <remote oid>, got: {line}"
+            "Invalid pre-push stdin format. Expected: <local ref> <local oid> <remote ref> \
+             <remote oid>, got: {line}"
         ));
     }
 
@@ -695,7 +699,8 @@ mod tests {
 
     #[test]
     fn test_parse_push_stdin_valid() {
-        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9";
+        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main \
+                     0fedcba9876543210fedcba9876543210fedcba9";
         let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
         assert_eq!(local_oid, "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0");
         assert_eq!(remote_oid, "0fedcba9876543210fedcba9876543210fedcba9");
@@ -704,7 +709,8 @@ mod tests {
     #[test]
     fn test_parse_push_stdin_new_branch() {
         // When pushing a new branch, remote OID is all zeros
-        let stdin = "refs/heads/feature a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/feature 0000000000000000000000000000000000000000";
+        let stdin = "refs/heads/feature a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 \
+                     refs/heads/feature 0000000000000000000000000000000000000000";
         let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
         assert_eq!(local_oid, "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0");
         // Should be replaced with empty tree hash
@@ -728,7 +734,10 @@ mod tests {
     #[test]
     fn test_parse_push_stdin_multiple_lines() {
         // Should only parse the first line
-        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9\nrefs/heads/other 1234567890abcdef1234567890abcdef12345678 refs/heads/other fedcba0987654321fedcba0987654321fedcba09";
+        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main \
+                     0fedcba9876543210fedcba9876543210fedcba9\nrefs/heads/other \
+                     1234567890abcdef1234567890abcdef12345678 refs/heads/other \
+                     fedcba0987654321fedcba0987654321fedcba09";
         let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
         assert_eq!(local_oid, "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0");
         assert_eq!(remote_oid, "0fedcba9876543210fedcba9876543210fedcba9");
@@ -736,7 +745,8 @@ mod tests {
 
     #[test]
     fn test_parse_push_stdin_invalid_local_oid_too_short() {
-        let stdin = "refs/heads/main abc123 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9";
+        let stdin =
+            "refs/heads/main abc123 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9";
         let err = parse_push_stdin(stdin).unwrap_err();
         assert!(
             err.to_string().contains("Invalid local OID format"),
@@ -746,7 +756,8 @@ mod tests {
 
     #[test]
     fn test_parse_push_stdin_invalid_local_oid_non_hex() {
-        let stdin = "refs/heads/main xyz123def456xyz123def456xyz123def456xy refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9";
+        let stdin = "refs/heads/main xyz123def456xyz123def456xyz123def456xy refs/heads/main \
+                     0fedcba9876543210fedcba9876543210fedcba9";
         let err = parse_push_stdin(stdin).unwrap_err();
         assert!(
             err.to_string().contains("Invalid local OID format"),
@@ -756,7 +767,8 @@ mod tests {
 
     #[test]
     fn test_parse_push_stdin_invalid_remote_oid_too_long() {
-        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9extra";
+        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main \
+                     0fedcba9876543210fedcba9876543210fedcba9extra";
         let err = parse_push_stdin(stdin).unwrap_err();
         assert!(
             err.to_string().contains("Invalid remote OID format"),
@@ -767,7 +779,8 @@ mod tests {
     #[test]
     fn test_parse_push_stdin_mixed_case_oids() {
         // OIDs can be mixed case - should be valid
-        let stdin = "refs/heads/main A1B2C3D4E5F6a7b8c9d0E1F2A3B4C5D6e7f8a9b0 refs/heads/main 0FEDcba9876543210FEDcba9876543210FEDcba9";
+        let stdin = "refs/heads/main A1B2C3D4E5F6a7b8c9d0E1F2A3B4C5D6e7f8a9b0 refs/heads/main \
+                     0FEDcba9876543210FEDcba9876543210FEDcba9";
         let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
         assert_eq!(local_oid, "A1B2C3D4E5F6a7b8c9d0E1F2A3B4C5D6e7f8a9b0");
         assert_eq!(remote_oid, "0FEDcba9876543210FEDcba9876543210FEDcba9");

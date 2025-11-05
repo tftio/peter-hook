@@ -45,8 +45,9 @@ pub struct HookDefinition {
     #[serde(default)]
     pub run_always: bool,
     /// Whether this hook requires a file list to run
-    /// If true, the hook will only run in contexts where files can be determined
-    /// (e.g., pre-commit, pre-push) and will be skipped in contexts like commit-msg
+    /// If true, the hook will only run in contexts where files can be
+    /// determined (e.g., pre-commit, pre-push) and will be skipped in
+    /// contexts like commit-msg
     #[serde(default)]
     pub requires_files: bool,
     /// Hooks that must complete successfully before this hook runs
@@ -65,7 +66,7 @@ pub struct HookDefinition {
 }
 
 /// Default timeout value: 5 minutes
-fn default_timeout_seconds() -> u64 {
+const fn default_timeout_seconds() -> u64 {
     300
 }
 
@@ -438,9 +439,10 @@ impl HookConfig {
                 // Check for conflicting requires_files and run_always settings
                 if hook.requires_files && hook.run_always {
                     return Err(anyhow::anyhow!(
-                        "Hook '{name}' cannot have both 'requires_files = true' and 'run_always = true'. \
-                         These settings are contradictory: requires_files means the hook depends on file changes, \
-                         while run_always means it should run regardless of changes."
+                        "Hook '{name}' cannot have both 'requires_files = true' and 'run_always = \
+                         true'. These settings are contradictory: requires_files means the hook \
+                         depends on file changes, while run_always means it should run regardless \
+                         of changes."
                     ));
                 }
 

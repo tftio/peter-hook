@@ -7,10 +7,13 @@
 //! - Performance benchmarks
 //! - Resource usage validation
 
-use std::fs;
-use std::path::PathBuf;
-use std::process::Command;
-use std::time::Instant;
+use std::{
+    fmt::Write,
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+    time::Instant,
+};
 use tempfile::TempDir;
 
 /// Helper to create a git repository with configuration
@@ -81,7 +84,8 @@ description = "Hooks at level {level}"
     }
 
     // Create and stage a file at the deepest level
-    let deepest_path = repo_path.join("level0/level1/level2/level3/level4/level5/level6/level7/level8/level9");
+    let deepest_path =
+        repo_path.join("level0/level1/level2/level3/level4/level5/level6/level7/level8/level9");
     fs::write(deepest_path.join("test.txt"), "content").unwrap();
 
     Command::new("git")
@@ -116,11 +120,10 @@ description = "Hooks at level {level}"
     // Performance assertion: deep hierarchy should resolve in under 2 seconds
     assert!(
         duration.as_secs() < 2,
-        "Deep hierarchy resolution took too long: {:?}",
-        duration
+        "Deep hierarchy resolution took too long: {duration:?}"
     );
 
-    println!("✓ 10-level hierarchy resolved in {:?}", duration);
+    println!("✓ 10-level hierarchy resolved in {duration:?}");
 }
 
 #[test]
@@ -150,7 +153,7 @@ description = "File processing"
         fs::write(dir.join(format!("file{i}.txt")), format!("content {i}")).unwrap();
     }
     let creation_duration = start_creation.elapsed();
-    println!("✓ Created 1000 files in {:?}", creation_duration);
+    println!("✓ Created 1000 files in {creation_duration:?}");
 
     // Stage all files
     let start_stage = Instant::now();
@@ -160,7 +163,7 @@ description = "File processing"
         .output()
         .unwrap();
     let stage_duration = start_stage.elapsed();
-    println!("✓ Staged 1000 files in {:?}", stage_duration);
+    println!("✓ Staged 1000 files in {stage_duration:?}");
 
     // Run hook with large file set
     let start = Instant::now();
@@ -182,16 +185,18 @@ description = "File processing"
         "Hook should execute.\nOutput: {combined}"
     );
 
-    assert!(output.status.success(), "Command should succeed with 1000 files");
+    assert!(
+        output.status.success(),
+        "Command should succeed with 1000 files"
+    );
 
     // Performance assertion: should handle 1000 files in under 5 seconds
     assert!(
         duration.as_secs() < 5,
-        "Processing 1000 files took too long: {:?}",
-        duration
+        "Processing 1000 files took too long: {duration:?}"
     );
 
-    println!("✓ Processed 1000 files in {:?}", duration);
+    println!("✓ Processed 1000 files in {duration:?}");
 }
 
 #[test]
@@ -200,11 +205,12 @@ fn test_large_hook_group_50_hooks() {
     let repo_path = temp_dir.path();
 
     // Create configuration with 50 hooks
-    let mut config = String::from("");
+    let mut config = String::new();
     let mut includes = Vec::new();
 
     for i in 0..50 {
-        config.push_str(&format!(
+        write!(
+            &mut config,
             r#"
 [hooks.hook-{i}]
 command = "echo 'Hook {i} executed'"
@@ -212,11 +218,13 @@ modifies_repository = false
 timeout_seconds = 5
 
 "#
-        ));
+        )
+        .unwrap();
         includes.push(format!("\"hook-{i}\""));
     }
 
-    config.push_str(&format!(
+    write!(
+        &mut config,
         r#"
 [groups.pre-commit]
 includes = [{}]
@@ -224,7 +232,8 @@ description = "Large hook group"
 execution_strategy = "parallel"
 "#,
         includes.join(", ")
-    ));
+    )
+    .unwrap();
 
     fs::write(repo_path.join("hooks.toml"), config).unwrap();
 
@@ -253,7 +262,10 @@ execution_strategy = "parallel"
 
     // Verify at least some hooks executed
     let hook_count = (0..50)
-        .filter(|i| combined.contains(&format!("Hook {i} executed")) || combined.contains(&format!("hook-{i}")))
+        .filter(|i| {
+            combined.contains(&format!("Hook {i} executed"))
+                || combined.contains(&format!("hook-{i}"))
+        })
         .count();
 
     assert!(
@@ -261,16 +273,19 @@ execution_strategy = "parallel"
         "At least some hooks should execute.\nOutput: {combined}"
     );
 
-    assert!(output.status.success(), "Command should succeed with 50 hooks");
-
-    // Performance assertion: parallel execution of 50 simple hooks should complete in under 10 seconds
     assert!(
-        duration.as_secs() < 10,
-        "Executing 50 hooks took too long: {:?}",
-        duration
+        output.status.success(),
+        "Command should succeed with 50 hooks"
     );
 
-    println!("✓ Executed 50 hooks in parallel in {:?}", duration);
+    // Performance assertion: parallel execution of 50 simple hooks should complete
+    // in under 10 seconds
+    assert!(
+        duration.as_secs() < 10,
+        "Executing 50 hooks took too long: {duration:?}"
+    );
+
+    println!("✓ Executed 50 hooks in parallel in {duration:?}");
 }
 
 #[test]
@@ -279,11 +294,12 @@ fn test_sequential_hooks_performance() {
     let repo_path = temp_dir.path();
 
     // Create 20 sequential hooks (reasonable number for sequential execution)
-    let mut config = String::from("");
+    let mut config = String::new();
     let mut includes = Vec::new();
 
     for i in 0..20 {
-        config.push_str(&format!(
+        write!(
+            &mut config,
             r#"
 [hooks.seq-hook-{i}]
 command = "echo 'Sequential hook {i}'"
@@ -291,11 +307,13 @@ modifies_repository = false
 timeout_seconds = 5
 
 "#
-        ));
+        )
+        .unwrap();
         includes.push(format!("\"seq-hook-{i}\""));
     }
 
-    config.push_str(&format!(
+    write!(
+        &mut config,
         r#"
 [groups.pre-commit]
 includes = [{}]
@@ -303,7 +321,8 @@ description = "Sequential hooks"
 execution_strategy = "sequential"
 "#,
         includes.join(", ")
-    ));
+    )
+    .unwrap();
 
     fs::write(repo_path.join("hooks.toml"), config).unwrap();
 
@@ -326,16 +345,18 @@ execution_strategy = "sequential"
 
     let duration = start.elapsed();
 
-    assert!(output.status.success(), "Sequential execution should succeed");
+    assert!(
+        output.status.success(),
+        "Sequential execution should succeed"
+    );
 
     // Performance assertion: 20 sequential hooks should complete in under 5 seconds
     assert!(
         duration.as_secs() < 5,
-        "Sequential execution of 20 hooks took too long: {:?}",
-        duration
+        "Sequential execution of 20 hooks took too long: {duration:?}"
     );
 
-    println!("✓ Executed 20 sequential hooks in {:?}", duration);
+    println!("✓ Executed 20 sequential hooks in {duration:?}");
 }
 
 #[test]
@@ -344,17 +365,18 @@ fn test_validate_command_performance_complex_config() {
     let repo_path = temp_dir.path();
 
     // Create complex configuration with dependencies and imports
-    let mut config = String::from("");
+    let mut config = String::new();
 
     // Create 30 hooks with complex dependencies
     for i in 0..30 {
         let deps = if i > 0 {
             format!("depends_on = [\"perf-hook-{}\"]", i - 1)
         } else {
-            String::from("")
+            String::new()
         };
 
-        config.push_str(&format!(
+        write!(
+            &mut config,
             r#"
 [hooks.perf-hook-{i}]
 command = "echo 'Hook {i}'"
@@ -363,7 +385,8 @@ files = ["**/*.rs", "**/*.toml"]
 {deps}
 
 "#
-        ));
+        )
+        .unwrap();
     }
 
     config.push_str(
@@ -396,11 +419,10 @@ description = "Multiple groups"
     // Performance assertion: validation should complete in under 1 second
     assert!(
         duration.as_millis() < 1000,
-        "Validation took too long: {:?}",
-        duration
+        "Validation took too long: {duration:?}"
     );
 
-    println!("✓ Validated complex config in {:?}", duration);
+    println!("✓ Validated complex config in {duration:?}");
 }
 
 #[test]
@@ -409,11 +431,12 @@ fn test_memory_efficient_large_config() {
     let repo_path = temp_dir.path();
 
     // Create a very large configuration (100 hooks)
-    let mut config = String::from("");
+    let mut config = String::new();
     let mut includes = Vec::new();
 
     for i in 0..100 {
-        config.push_str(&format!(
+        write!(
+            &mut config,
             r#"
 [hooks.mem-hook-{i}]
 command = "true"
@@ -423,12 +446,14 @@ description = "Test hook {i} for memory efficiency testing with long description
 timeout_seconds = 300
 
 "#
-        ));
+        )
+        .unwrap();
         includes.push(format!("\"mem-hook-{i}\""));
     }
 
     // Split into multiple groups
-    config.push_str(&format!(
+    write!(
+        &mut config,
         r#"
 [groups.pre-commit]
 includes = [{}]
@@ -442,7 +467,8 @@ execution_strategy = "parallel"
 "#,
         includes[0..50].join(", "),
         includes[50..100].join(", ")
-    ));
+    )
+    .unwrap();
 
     fs::write(repo_path.join("hooks.toml"), config).unwrap();
 
@@ -465,21 +491,18 @@ execution_strategy = "parallel"
     // Should validate efficiently even with 100 hooks
     assert!(
         duration.as_secs() < 2,
-        "Validation of 100-hook config took too long: {:?}",
-        duration
+        "Validation of 100-hook config took too long: {duration:?}"
     );
 
-    println!("✓ Validated 100-hook configuration in {:?}", duration);
+    println!("✓ Validated 100-hook configuration in {duration:?}");
 }
 
 #[test]
 fn test_file_discovery_performance_deep_tree() {
-    let temp_dir = setup_test_repo();
-    let repo_path = temp_dir.path();
-
-    // Create deep directory tree (5 levels, 10 dirs per level = 10^5 = 100,000 potential paths)
-    // But we'll be more modest: 5 levels, 5 dirs per level = 5^5 = 3,125 paths
-    fn create_tree(path: &PathBuf, depth: u32, breadth: u32) {
+    // Create deep directory tree (5 levels, 10 dirs per level = 10^5 = 100,000
+    // potential paths) But we'll be more modest: 5 levels, 5 dirs per level =
+    // 5^5 = 3,125 paths
+    fn create_tree(path: &Path, depth: u32, breadth: u32) {
         if depth == 0 {
             // Create a file at leaf
             fs::write(path.join("leaf.txt"), "content").unwrap();
@@ -493,10 +516,13 @@ fn test_file_discovery_performance_deep_tree() {
         }
     }
 
+    let temp_dir = setup_test_repo();
+    let repo_path = temp_dir.path();
+
     let start_creation = Instant::now();
-    create_tree(&repo_path.to_path_buf(), 5, 5);
+    create_tree(repo_path, 5, 5);
     let creation_duration = start_creation.elapsed();
-    println!("✓ Created deep tree in {:?}", creation_duration);
+    println!("✓ Created deep tree in {creation_duration:?}");
 
     // Create hook config
     let config = r#"
@@ -519,7 +545,7 @@ includes = ["tree-walker"]
         .output()
         .unwrap();
     let stage_duration = start_stage.elapsed();
-    println!("✓ Staged deep tree in {:?}", stage_duration);
+    println!("✓ Staged deep tree in {stage_duration:?}");
 
     // Run hook with deep tree
     let start = Instant::now();
@@ -537,11 +563,10 @@ includes = ["tree-walker"]
     // Should handle deep tree efficiently
     assert!(
         duration.as_secs() < 10,
-        "Processing deep tree took too long: {:?}",
-        duration
+        "Processing deep tree took too long: {duration:?}"
     );
 
-    println!("✓ Processed deep directory tree in {:?}", duration);
+    println!("✓ Processed deep directory tree in {duration:?}");
 }
 
 #[test]
@@ -550,11 +575,12 @@ fn test_mixed_execution_strategies_performance() {
     let repo_path = temp_dir.path();
 
     // Create mix of modifying and non-modifying hooks
-    let mut config = String::from("");
+    let mut config = String::new();
 
     // 10 non-modifying hooks (can run in parallel)
     for i in 0..10 {
-        config.push_str(&format!(
+        write!(
+            &mut config,
             r#"
 [hooks.parallel-hook-{i}]
 command = "echo 'Parallel {i}'"
@@ -562,12 +588,14 @@ modifies_repository = false
 timeout_seconds = 5
 
 "#
-        ));
+        )
+        .unwrap();
     }
 
     // 5 modifying hooks (must run sequentially)
     for i in 0..5 {
-        config.push_str(&format!(
+        write!(
+            &mut config,
             r#"
 [hooks.sequential-hook-{i}]
 command = "echo 'Sequential {i}'"
@@ -575,7 +603,8 @@ modifies_repository = true
 timeout_seconds = 5
 
 "#
-        ));
+        )
+        .unwrap();
     }
 
     config.push_str(
@@ -617,9 +646,8 @@ execution_strategy = "parallel"
     // Should complete efficiently despite phase separation
     assert!(
         duration.as_secs() < 8,
-        "Mixed execution took too long: {:?}",
-        duration
+        "Mixed execution took too long: {duration:?}"
     );
 
-    println!("✓ Mixed execution (10 parallel + 5 sequential) completed in {:?}", duration);
+    println!("✓ Mixed execution (10 parallel + 5 sequential) completed in {duration:?}");
 }
