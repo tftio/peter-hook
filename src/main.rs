@@ -264,7 +264,7 @@ fn print_lint_targets() -> Result<()> {
 
 /// Run hooks for a specific git event
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
-fn run_hooks(event: &str, git_args: &[String], all_files: bool, dry_run: bool) -> Result<()> {
+fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) -> Result<()> {
     let current_dir = env::current_dir().context("Failed to get current working directory")?;
 
     // Get repository information for hierarchical resolution
@@ -287,29 +287,47 @@ fn run_hooks(event: &str, git_args: &[String], all_files: bool, dry_run: bool) -
         match event {
             "pre-commit" => Some(ChangeDetectionMode::Staged),
             "pre-push" => {
-                // Parse git arguments to extract commit OIDs
-                // Git passes refs via stdin for pre-push hooks
-                if git_args.is_empty() {
-                    // No git args provided, fall back to comparing HEAD with origin/main
-                    Some(ChangeDetectionMode::CommitRange {
-                        from: "origin/main".to_string(),
-                        to: "HEAD".to_string(),
-                    })
-                } else {
-                    let stdin_content = git_args.join(" ");
-                    match peter_hook::git::parse_push_stdin(&stdin_content) {
-                        Ok((local_oid, remote_oid)) => Some(ChangeDetectionMode::Push {
-                            local_oid,
-                            remote_oid,
-                        }),
-                        Err(e) => {
-                            // If parsing fails, fall back to comparing HEAD with origin/main
-                            eprintln!("Warning: Failed to parse pre-push arguments: {e}");
-                            eprintln!("Falling back to comparing HEAD with origin/main");
-                            Some(ChangeDetectionMode::CommitRange {
-                                from: "origin/main".to_string(),
-                                to: "HEAD".to_string(),
-                            })
+                // Git passes refs via stdin for pre-push hooks in the format:
+                // <local ref> <local oid> <remote ref> <remote oid>
+                // Try to read from stdin
+                let mut stdin_content = String::new();
+                let stdin_result = io::stdin().read_line(&mut stdin_content);
+
+                match stdin_result {
+                    Ok(0) => {
+                        // No stdin input, fall back to comparing HEAD with origin/main
+                        eprintln!("Warning: No stdin input provided for pre-push hook");
+                        eprintln!("Falling back to comparing HEAD with origin/main");
+                        Some(ChangeDetectionMode::CommitRange {
+                            from: "origin/main".to_string(),
+                            to: "HEAD".to_string(),
+                        })
+                    }
+                    Err(e) => {
+                        // Read error, fall back to comparing HEAD with origin/main
+                        eprintln!("Warning: Failed to read stdin for pre-push hook: {e}");
+                        eprintln!("Falling back to comparing HEAD with origin/main");
+                        Some(ChangeDetectionMode::CommitRange {
+                            from: "origin/main".to_string(),
+                            to: "HEAD".to_string(),
+                        })
+                    }
+                    Ok(_) => {
+                        // Successfully read from stdin, try to parse it
+                        match peter_hook::git::parse_push_stdin(&stdin_content) {
+                            Ok((local_oid, remote_oid)) => Some(ChangeDetectionMode::Push {
+                                local_oid,
+                                remote_oid,
+                            }),
+                            Err(e) => {
+                                // If parsing fails, fall back to comparing HEAD with origin/main
+                                eprintln!("Warning: Failed to parse pre-push stdin: {e}");
+                                eprintln!("Falling back to comparing HEAD with origin/main");
+                                Some(ChangeDetectionMode::CommitRange {
+                                    from: "origin/main".to_string(),
+                                    to: "HEAD".to_string(),
+                                })
+                            }
                         }
                     }
                 }
