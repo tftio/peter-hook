@@ -22,16 +22,16 @@ pub enum ChangeDetectionMode {
     Staged,
     /// Changes being pushed (for pre-push)
     Push {
-        /// Remote name (usually "origin")
-        remote: String,
-        /// Branch being pushed to
-        remote_branch: String,
+        /// Local commit OID
+        local_oid: String,
+        /// Remote commit OID
+        remote_oid: String,
     },
     /// Changes in a specific commit range
     CommitRange {
         /// Start commit (exclusive)
         from: String,
-        /// End commit (inclusive)  
+        /// End commit (inclusive)
         to: String,
     },
 }
@@ -66,9 +66,9 @@ impl GitChangeDetector {
             ChangeDetectionMode::WorkingDirectory => self.get_working_directory_changes(),
             ChangeDetectionMode::Staged => self.get_staged_changes(),
             ChangeDetectionMode::Push {
-                remote,
-                remote_branch,
-            } => self.get_push_changes(remote, remote_branch),
+                local_oid,
+                remote_oid,
+            } => self.get_push_changes(remote_oid, local_oid),
             ChangeDetectionMode::CommitRange { from, to } => {
                 self.get_commit_range_changes(from, to)
             }
@@ -151,10 +151,9 @@ impl GitChangeDetector {
         Ok(changed_files)
     }
 
-    /// Get files changed in push (compare local branch with remote)
-    fn get_push_changes(&self, remote: &str, remote_branch: &str) -> Result<Vec<PathBuf>> {
-        let remote_ref = format!("{remote}/{remote_branch}");
-        let diff_output = self.run_git_command(&["diff", "--name-status", &remote_ref, "HEAD"])?;
+    /// Get files changed in push (compare local OID with remote OID)
+    fn get_push_changes(&self, remote_oid: &str, local_oid: &str) -> Result<Vec<PathBuf>> {
+        let diff_output = self.run_git_command(&["diff", "--name-status", remote_oid, local_oid])?;
 
         let mut changed_files = Vec::new();
         for line in diff_output.lines() {
@@ -218,6 +217,89 @@ impl GitChangeDetector {
 
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     }
+}
+
+/// Parse pre-push hook stdin to extract commit OIDs
+///
+/// Git's pre-push hook receives on stdin lines in the format:
+/// `<local ref> <local oid> <remote ref> <remote oid>`
+///
+/// For example:
+/// `refs/heads/main 67890abc... refs/heads/main 12345def...`
+///
+/// This function parses the first line and extracts the local and remote OIDs.
+/// If the remote OID is all zeros (0000000...), it means the remote branch doesn't
+/// exist yet (new branch push), so we use an empty tree as the base.
+///
+/// # Arguments
+/// * `stdin_content` - The content from stdin (typically from `git_args` passed to the hook)
+///
+/// # Returns
+/// A tuple of (`local_oid`, `remote_oid`) on success
+///
+/// # Errors
+/// Returns an error if the stdin format is invalid or cannot be parsed
+/// Validate that a string is a valid git OID (SHA-1 hash)
+///
+/// A valid OID must be exactly 40 hexadecimal characters (0-9, a-f, A-F)
+fn is_valid_oid(oid: &str) -> bool {
+    oid.len() == 40 && oid.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Parse the stdin content from a git pre-push hook
+///
+/// Git passes the following format on stdin:
+/// `<local ref> <local oid> <remote ref> <remote oid>`
+///
+/// # Arguments
+/// * `stdin_content` - The content from stdin
+///
+/// # Returns
+/// A tuple of (`local_oid`, `remote_oid`) on success
+///
+/// # Errors
+/// Returns an error if the stdin format is invalid, cannot be parsed, or OIDs are malformed
+pub fn parse_push_stdin(stdin_content: &str) -> Result<(String, String)> {
+    let line = stdin_content
+        .lines()
+        .next()
+        .context("No input received from git pre-push hook")?;
+
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    if parts.len() < 4 {
+        return Err(anyhow::anyhow!(
+            "Invalid pre-push stdin format. Expected: <local ref> <local oid> <remote ref> <remote oid>, got: {line}"
+        ));
+    }
+
+    let local_oid = parts[1];
+    let remote_oid = parts[3];
+
+    // Validate OID format
+    if !is_valid_oid(local_oid) {
+        return Err(anyhow::anyhow!(
+            "Invalid local OID format: '{local_oid}'. Expected 40-character hex string"
+        ));
+    }
+
+    // Remote OID can be all zeros (new branch) or a valid OID
+    let is_new_branch = remote_oid.chars().all(|c| c == '0');
+    if !is_new_branch && !is_valid_oid(remote_oid) {
+        return Err(anyhow::anyhow!(
+            "Invalid remote OID format: '{remote_oid}'. Expected 40-character hex string"
+        ));
+    }
+
+    // If remote OID is all zeros, the remote branch doesn't exist (new branch)
+    // Use the empty tree hash as the base for comparison
+    let remote_oid = if is_new_branch {
+        // Git empty tree hash (this is a well-known constant)
+        "4b825dc642cb6eb9a060e54bf8d69288fbee4904".to_string()
+    } else {
+        remote_oid.to_string()
+    };
+
+    Ok((local_oid.to_string(), remote_oid))
 }
 
 /// File pattern matcher using glob patterns
@@ -301,6 +383,13 @@ mod tests {
 
         Command::new("git")
             .args(["config", "user.email", "test@example.com"])
+            .current_dir(temp_dir)
+            .output()
+            .unwrap();
+
+        // Disable GPG signing for commits in tests
+        Command::new("git")
+            .args(["config", "commit.gpgsign", "false"])
             .current_dir(temp_dir)
             .output()
             .unwrap();
@@ -496,17 +585,23 @@ mod tests {
         let old_file = repo_dir.join("original.rs");
         fs::write(&old_file, "fn main() {}").unwrap();
 
-        Command::new("git")
+        let output = Command::new("git")
             .args(["add", "original.rs"])
             .current_dir(&repo_dir)
             .output()
             .unwrap();
+        assert!(output.status.success(), "git add failed");
 
-        Command::new("git")
+        let output = Command::new("git")
             .args(["commit", "-m", "Add original file"])
             .current_dir(&repo_dir)
             .output()
             .unwrap();
+        assert!(
+            output.status.success(),
+            "git commit failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
 
         // Get the commit hash
         let first_commit = Command::new("git")
@@ -514,6 +609,7 @@ mod tests {
             .current_dir(&repo_dir)
             .output()
             .unwrap();
+        assert!(first_commit.status.success(), "git rev-parse failed");
         let first_commit_hash = String::from_utf8_lossy(&first_commit.stdout)
             .trim()
             .to_string();
@@ -522,17 +618,23 @@ mod tests {
         let new_file = repo_dir.join("renamed.rs");
         std::fs::rename(&old_file, &new_file).unwrap();
 
-        Command::new("git")
+        let output = Command::new("git")
             .args(["add", "-A"])
             .current_dir(&repo_dir)
             .output()
             .unwrap();
+        assert!(output.status.success(), "git add -A failed");
 
-        Command::new("git")
+        let output = Command::new("git")
             .args(["commit", "-m", "Rename file"])
             .current_dir(&repo_dir)
             .output()
             .unwrap();
+        assert!(
+            output.status.success(),
+            "git commit failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
 
         // Test commit range - should show the NEW filename
         let range_changes = detector
@@ -589,5 +691,85 @@ mod tests {
             staged_changes.contains(&PathBuf::from("copied.rs")),
             "Should contain the copied filename"
         );
+    }
+
+    #[test]
+    fn test_parse_push_stdin_valid() {
+        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9";
+        let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
+        assert_eq!(local_oid, "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0");
+        assert_eq!(remote_oid, "0fedcba9876543210fedcba9876543210fedcba9");
+    }
+
+    #[test]
+    fn test_parse_push_stdin_new_branch() {
+        // When pushing a new branch, remote OID is all zeros
+        let stdin = "refs/heads/feature a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/feature 0000000000000000000000000000000000000000";
+        let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
+        assert_eq!(local_oid, "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0");
+        // Should be replaced with empty tree hash
+        assert_eq!(remote_oid, "4b825dc642cb6eb9a060e54bf8d69288fbee4904");
+    }
+
+    #[test]
+    fn test_parse_push_stdin_empty() {
+        let stdin = "";
+        let err = parse_push_stdin(stdin).unwrap_err();
+        assert!(err.to_string().contains("No input received"));
+    }
+
+    #[test]
+    fn test_parse_push_stdin_invalid_format() {
+        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0"; // Missing fields
+        let err = parse_push_stdin(stdin).unwrap_err();
+        assert!(err.to_string().contains("Invalid pre-push stdin format"));
+    }
+
+    #[test]
+    fn test_parse_push_stdin_multiple_lines() {
+        // Should only parse the first line
+        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9\nrefs/heads/other 1234567890abcdef1234567890abcdef12345678 refs/heads/other fedcba0987654321fedcba0987654321fedcba09";
+        let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
+        assert_eq!(local_oid, "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0");
+        assert_eq!(remote_oid, "0fedcba9876543210fedcba9876543210fedcba9");
+    }
+
+    #[test]
+    fn test_parse_push_stdin_invalid_local_oid_too_short() {
+        let stdin = "refs/heads/main abc123 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9";
+        let err = parse_push_stdin(stdin).unwrap_err();
+        assert!(
+            err.to_string().contains("Invalid local OID format"),
+            "Error should mention invalid local OID: {err}"
+        );
+    }
+
+    #[test]
+    fn test_parse_push_stdin_invalid_local_oid_non_hex() {
+        let stdin = "refs/heads/main xyz123def456xyz123def456xyz123def456xy refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9";
+        let err = parse_push_stdin(stdin).unwrap_err();
+        assert!(
+            err.to_string().contains("Invalid local OID format"),
+            "Error should mention invalid local OID: {err}"
+        );
+    }
+
+    #[test]
+    fn test_parse_push_stdin_invalid_remote_oid_too_long() {
+        let stdin = "refs/heads/main a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 refs/heads/main 0fedcba9876543210fedcba9876543210fedcba9extra";
+        let err = parse_push_stdin(stdin).unwrap_err();
+        assert!(
+            err.to_string().contains("Invalid remote OID format"),
+            "Error should mention invalid remote OID: {err}"
+        );
+    }
+
+    #[test]
+    fn test_parse_push_stdin_mixed_case_oids() {
+        // OIDs can be mixed case - should be valid
+        let stdin = "refs/heads/main A1B2C3D4E5F6a7b8c9d0E1F2A3B4C5D6e7f8a9b0 refs/heads/main 0FEDcba9876543210FEDcba9876543210FEDcba9";
+        let (local_oid, remote_oid) = parse_push_stdin(stdin).unwrap();
+        assert_eq!(local_oid, "A1B2C3D4E5F6a7b8c9d0E1F2A3B4C5D6e7f8a9b0");
+        assert_eq!(remote_oid, "0FEDcba9876543210FEDcba9876543210FEDcba9");
     }
 }

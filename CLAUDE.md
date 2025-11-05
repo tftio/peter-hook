@@ -110,7 +110,8 @@ workdir = "custom/path"              # Optional: override working directory
 env = { KEY = "value" }              # Optional: environment variables (supports template variables)
 files = ["**/*.rs", "Cargo.toml"]    # Optional: file patterns for targeting
 depends_on = ["format", "setup"]     # Optional: hook dependencies
-run_always = false                   # Optional: ignore file changes (incompatible with files)
+run_always = false                   # Optional: ignore file changes (incompatible with files and requires_files)
+requires_files = false               # Optional: require file list to run (incompatible with run_always)
 run_at_root = false                  # Optional: run at repository root instead of config directory
 ```
 
@@ -185,6 +186,47 @@ files = ["**/*.rs"]
    run_always = true  # Always runs (incompatible with files pattern)
    ```
 
+### Requiring File Lists
+
+The `requires_files` flag ensures hooks only run when peter-hook can provide a file list. This is useful for hooks that depend on knowing which files changed (like test runners or linters).
+
+**When to use `requires_files = true`:**
+- Test hooks that should only run when relevant files change
+- Expensive operations that should skip if no files are available
+- Hooks that need file context to function properly
+
+**Compatible hook types** (can provide files):
+- `pre-commit` - Gets staged files
+- `pre-push` - Gets files in the push changeset
+- `post-commit`, `post-merge`, `post-checkout` - Gets files in recent commits
+- Other file-based hooks
+
+**Incompatible hook types** (cannot provide files):
+- `commit-msg`, `prepare-commit-msg` - Operate on commit messages
+- `applypatch-msg` - Operates on patch messages
+
+**Example: Test hook that only runs in pre-push when files change**
+```toml
+[hooks.pytest]
+command = "pytest"
+description = "Run Python tests only when Python files change"
+modifies_repository = false
+execution_type = "in-place"
+files = ["**/*.py", "**/test_*.py"]  # Only match Python test files
+requires_files = true                 # Skip if no files available
+
+[groups.pre-push]
+includes = ["pytest"]
+description = "Pre-push validation"
+```
+
+In this example:
+- In `pre-push`: Runs only if Python files changed in the push
+- In `commit-msg`: Skipped (can't provide files)
+- With `--all-files`: Skipped (no file list available)
+
+**Validation:** The `peter-hook validate` command checks for incompatible configurations and warns if `requires_files` hooks are used in groups that cannot provide files.
+
 ### Execution Strategies (Parallelism)
 - `sequential`: Run hooks one after another (default)
 - `parallel`: Run safely in parallel (respects `modifies_repository` flag)
@@ -232,6 +274,40 @@ files = ["**/*.rs"]
 - Hierarchical resolution: child directories override parent configurations
 - Thread-safe parallel execution with proper error handling
 - Backward compatibility maintained for deprecated `parallel` field in groups
+
+### Multi-Config Group Execution Behavior
+
+When multiple config groups are involved (different `hooks.toml` files for different changed files), peter-hook executes them sequentially with fail-fast semantics:
+
+**Execution Order:**
+1. Groups are processed in the order they are resolved (typically by file path)
+2. Each group's hooks execute according to their execution strategy (sequential/parallel)
+3. **On failure**: Execution stops immediately; remaining groups are NOT executed
+4. **On success**: Proceeds to the next group
+
+**Example Scenario:**
+```
+Changed files:
+  - backend/api.rs      → Config Group A (backend/hooks.toml)
+  - frontend/app.tsx    → Config Group B (frontend/hooks.toml)
+  - docs/README.md      → Config Group C (docs/hooks.toml)
+
+Execution flow:
+  Group A (backend): Run hooks → SUCCESS ✓
+  Group B (frontend): Run hooks → FAILURE ✗
+  Group C (docs): SKIPPED (not executed)
+
+Final result: FAILURE (git commit/push is blocked)
+```
+
+**Rationale:**
+This behavior follows traditional git hook semantics where any failure blocks the git operation. This prevents partially-validated changes from being committed/pushed.
+
+**Important Notes:**
+- Failed groups do NOT roll back or undo previous successful groups
+- Each group executes in its own context (config directory)
+- Hook names are prefixed with config path in output for clarity
+- Use `--dry-run` to preview execution without actually running hooks
 
 ## Advanced Features
 

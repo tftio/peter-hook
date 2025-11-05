@@ -264,7 +264,7 @@ fn print_lint_targets() -> Result<()> {
 
 /// Run hooks for a specific git event
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
-fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) -> Result<()> {
+fn run_hooks(event: &str, git_args: &[String], all_files: bool, dry_run: bool) -> Result<()> {
     let current_dir = env::current_dir().context("Failed to get current working directory")?;
 
     // Get repository information for hierarchical resolution
@@ -286,10 +286,34 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
     } else {
         match event {
             "pre-commit" => Some(ChangeDetectionMode::Staged),
-            "pre-push" => Some(ChangeDetectionMode::Push {
-                remote: "origin".to_string(),
-                remote_branch: "main".to_string(), // TODO: detect actual default branch
-            }),
+            "pre-push" => {
+                // Parse git arguments to extract commit OIDs
+                // Git passes refs via stdin for pre-push hooks
+                if git_args.is_empty() {
+                    // No git args provided, fall back to comparing HEAD with origin/main
+                    Some(ChangeDetectionMode::CommitRange {
+                        from: "origin/main".to_string(),
+                        to: "HEAD".to_string(),
+                    })
+                } else {
+                    let stdin_content = git_args.join(" ");
+                    match peter_hook::git::parse_push_stdin(&stdin_content) {
+                        Ok((local_oid, remote_oid)) => Some(ChangeDetectionMode::Push {
+                            local_oid,
+                            remote_oid,
+                        }),
+                        Err(e) => {
+                            // If parsing fails, fall back to comparing HEAD with origin/main
+                            eprintln!("Warning: Failed to parse pre-push arguments: {e}");
+                            eprintln!("Falling back to comparing HEAD with origin/main");
+                            Some(ChangeDetectionMode::CommitRange {
+                                from: "origin/main".to_string(),
+                                to: "HEAD".to_string(),
+                            })
+                        }
+                    }
+                }
+            }
             "commit-msg" | "prepare-commit-msg" => None, // Message hooks don't filter by files
             "post-commit" | "post-merge" | "post-checkout" => {
                 Some(ChangeDetectionMode::CommitRange {
@@ -744,6 +768,9 @@ fn validate_config(trace_imports: bool, json: bool) -> Result<()> {
 
                         // Display detailed hook composition
                         print_hook_details(&config);
+
+                        // Validate requires_files compatibility
+                        validate_requires_files_compatibility(&config);
                     }
                     Err(e) => {
                         eprintln!("✗ Configuration is invalid: {e:#}");
@@ -767,6 +794,9 @@ fn validate_config(trace_imports: bool, json: bool) -> Result<()> {
 
                         // Display detailed hook composition
                         print_hook_details(&config);
+
+                        // Validate requires_files compatibility
+                        validate_requires_files_compatibility(&config);
                     }
                     Err(e) => {
                         eprintln!("✗ Configuration is invalid: {e:#}");
@@ -784,6 +814,7 @@ fn validate_config(trace_imports: bool, json: bool) -> Result<()> {
 }
 
 /// Print detailed information about all hooks and groups in the configuration
+#[allow(clippy::too_many_lines)]
 fn print_hook_details(config: &peter_hook::HookConfig) {
     use peter_hook::config::{ExecutionType, HookCommand};
 
@@ -836,6 +867,11 @@ fn print_hook_details(config: &peter_hook::HookConfig) {
                     println!("│  File Patterns: ⚡ run_always=true (ignores file changes)");
                 } else {
                     println!("│  File Patterns: (none - runs on any file change)");
+                }
+
+                // Requires files flag
+                if hook.requires_files {
+                    println!("│  Requires Files: ✓ (only runs in file-capable hooks)");
                 }
 
                 // Working directory
@@ -918,6 +954,50 @@ fn print_hook_details(config: &peter_hook::HookConfig) {
     }
 
     println!("═══════════════════════════════════════════════════════════");
+}
+
+/// Validate `requires_files` compatibility with hook event types
+fn validate_requires_files_compatibility(config: &peter_hook::HookConfig) {
+    use peter_hook::git::can_provide_files;
+
+    let mut warnings = Vec::new();
+
+    // Check groups that look like git hook events
+    if let Some(groups) = &config.groups {
+        for (group_name, group) in groups {
+            // Check if this group name matches a git hook type
+            if !can_provide_files(group_name) {
+                // This is a hook type that cannot provide files (e.g., commit-msg)
+                // Check if any hooks in this group require files
+                if let Some(hooks) = &config.hooks {
+                    for include in &group.includes {
+                        if let Some(hook) = hooks.get(include) {
+                            if hook.requires_files {
+                                warnings.push(format!(
+                                    "Hook '{include}' requires files but is included in group '{group_name}' which cannot provide file lists"
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if !warnings.is_empty() {
+        println!("\n⚠️  VALIDATION WARNINGS:\n");
+        for warning in warnings {
+            eprintln!("  ⚠️  {warning}");
+        }
+        eprintln!("\n  Hooks with requires_files=true can only run in:");
+        eprintln!("    - pre-commit (staged files)");
+        eprintln!("    - pre-push (push changes)");
+        eprintln!("    - post-commit, post-merge, post-checkout (commit changes)");
+        eprintln!("    - Other file-based hooks\n");
+        eprintln!("  They CANNOT run in:");
+        eprintln!("    - commit-msg, prepare-commit-msg (message hooks)");
+        eprintln!("    - applypatch-msg (message hooks)\n");
+    }
 }
 
 /// Run hooks in lint mode

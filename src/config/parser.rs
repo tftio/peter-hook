@@ -24,6 +24,7 @@ pub struct HookConfig {
 
 /// Definition of an individual hook
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct HookDefinition {
     /// Command to execute (either as string or array)
     pub command: HookCommand,
@@ -43,6 +44,11 @@ pub struct HookDefinition {
     /// Run this hook always, regardless of file changes
     #[serde(default)]
     pub run_always: bool,
+    /// Whether this hook requires a file list to run
+    /// If true, the hook will only run in contexts where files can be determined
+    /// (e.g., pre-commit, pre-push) and will be skipped in contexts like commit-msg
+    #[serde(default)]
+    pub requires_files: bool,
     /// Hooks that must complete successfully before this hook runs
     pub depends_on: Option<Vec<String>>,
     /// How to execute this hook with respect to changed files
@@ -417,6 +423,15 @@ impl HookConfig {
                         "Hook '{name}' cannot have both 'files' patterns and 'run_always = true'. \
                          Use either file patterns for conditional execution or 'run_always = \
                          true' for unconditional execution."
+                    ));
+                }
+
+                // Check for conflicting requires_files and run_always settings
+                if hook.requires_files && hook.run_always {
+                    return Err(anyhow::anyhow!(
+                        "Hook '{name}' cannot have both 'requires_files = true' and 'run_always = true'. \
+                         These settings are contradictory: requires_files means the hook depends on file changes, \
+                         while run_always means it should run regardless of changes."
                     ));
                 }
 
@@ -1346,6 +1361,71 @@ description = "Valid placeholder"
 
         let config = HookConfig::parse(toml).unwrap();
         // Should not error on validation
+        config.validate().unwrap();
+    }
+
+    #[test]
+    fn test_requires_files_field() {
+        let toml = r#"
+[hooks.test-hook]
+command = "pytest"
+requires_files = true
+files = ["**/*.py"]
+"#;
+
+        let config = HookConfig::parse(toml).unwrap();
+        let hooks = config.hooks.unwrap();
+        let hook = &hooks["test-hook"];
+        assert!(hook.requires_files);
+        assert_eq!(hook.files, Some(vec!["**/*.py".to_string()]));
+    }
+
+    #[test]
+    fn test_requires_files_defaults_to_false() {
+        let toml = r#"
+[hooks.test-hook]
+command = "echo test"
+"#;
+
+        let config = HookConfig::parse(toml).unwrap();
+        let hooks = config.hooks.unwrap();
+        let hook = &hooks["test-hook"];
+        assert!(!hook.requires_files);
+    }
+
+    #[test]
+    fn test_validation_rejects_requires_files_with_run_always() {
+        let toml = r#"
+[hooks.bad-hook]
+command = "echo test"
+requires_files = true
+run_always = true
+"#;
+
+        let err = HookConfig::parse(toml).unwrap_err();
+        assert!(err.to_string().contains("requires_files"));
+        assert!(err.to_string().contains("run_always"));
+        assert!(err.to_string().contains("contradictory"));
+    }
+
+    #[test]
+    fn test_requires_files_with_files_pattern_valid() {
+        let toml = r#"
+[hooks.pytest]
+command = "pytest"
+requires_files = true
+files = ["**/*.py", "**/test_*.py"]
+modifies_repository = false
+"#;
+
+        let config = HookConfig::parse(toml).unwrap();
+        let hooks = config.hooks.as_ref().unwrap();
+        let hook = &hooks["pytest"];
+        assert!(hook.requires_files);
+        assert_eq!(
+            hook.files,
+            Some(vec!["**/*.py".to_string(), "**/test_*.py".to_string()])
+        );
         config.validate().unwrap();
     }
 }

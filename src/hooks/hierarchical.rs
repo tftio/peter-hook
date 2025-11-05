@@ -349,6 +349,15 @@ fn resolve_event_for_config(
             )
         };
 
+        // Skip hooks that require files when no files are available
+        if hook_def.requires_files && changed_files.is_none() {
+            trace!(
+                "Skipping hook '{}' because it requires files but none are available",
+                hook_name
+            );
+            continue;
+        }
+
         resolved_hooks_map.insert(
             hook_name,
             ResolvedHook {

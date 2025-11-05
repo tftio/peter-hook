@@ -101,8 +101,8 @@ fn test_detect_push_mode() {
 
     let detector = GitChangeDetector::new(temp_dir.path()).unwrap();
     let result = detector.get_changed_files(&ChangeDetectionMode::Push {
-        remote: "origin".to_string(),
-        remote_branch: "main".to_string(),
+        local_oid: "HEAD".to_string(),
+        remote_oid: "HEAD^".to_string(),
     });
 
     // May succeed or fail depending on git state, but shouldn't panic

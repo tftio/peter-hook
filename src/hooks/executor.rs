@@ -62,12 +62,24 @@ impl HookExecutor {
     /// Execute multiple configuration groups (for hierarchical resolution)
     ///
     /// This executes hooks from multiple configurations, each in their own
-    /// directory. All results are aggregated into a single
-    /// `ExecutionResults`.
+    /// directory. Groups are executed sequentially with fail-fast semantics:
+    ///
+    /// 1. Groups are processed in order
+    /// 2. Each group executes its hooks according to its execution strategy
+    /// 3. **On failure**: Execution stops immediately; remaining groups are skipped
+    /// 4. **On success**: Proceeds to the next group
+    ///
+    /// This follows traditional git hook behavior where any failure blocks the
+    /// git operation (commit, push, etc.). Failed groups do NOT roll back or
+    /// undo previous successful groups.
+    ///
+    /// All results are aggregated into a single `ExecutionResults` with hook
+    /// names prefixed by config path when multiple configs are involved.
     ///
     /// # Errors
     ///
     /// Returns an error if any hook fails to execute due to system issues
+    /// (e.g., command not found, permission denied)
     pub fn execute_multiple(groups: &[crate::hooks::ConfigGroup]) -> Result<ExecutionResults> {
         let mut all_results = HashMap::new();
         let mut overall_success = true;
@@ -1169,6 +1181,7 @@ mod tests {
                 modifies_repository: false,
                 files: None,
                 run_always: true, // Always run in tests since we pass None for changed_files
+                requires_files: false, // Default to false for tests
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::PerFile,
                 run_at_root: false,
@@ -1381,6 +1394,7 @@ mod tests {
                 modifies_repository,
                 files: None,
                 run_always: false,
+                requires_files: false,
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::PerFile,
                 run_at_root: false,
@@ -1406,6 +1420,7 @@ mod tests {
                 modifies_repository: false,
                 files: Some(vec!["**/*.rs".to_string()]),
                 run_always: false,
+                requires_files: false,
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: false,
@@ -1435,6 +1450,7 @@ mod tests {
                 modifies_repository: false,
                 files: None,
                 run_always: false,
+                requires_files: false,
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: false,
@@ -1468,6 +1484,7 @@ mod tests {
                 modifies_repository: false,
                 files: None,
                 run_always: false,
+                requires_files: false,
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: false,
@@ -1509,6 +1526,7 @@ mod tests {
                 modifies_repository: false,
                 files: None,
                 run_always: false,
+                requires_files: false,
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: true,
@@ -1527,6 +1545,7 @@ mod tests {
                 modifies_repository: false,
                 files: None,
                 run_always: false,
+                requires_files: false,
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: false,
