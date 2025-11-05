@@ -58,6 +58,15 @@ pub struct HookDefinition {
     /// directory
     #[serde(default)]
     pub run_at_root: bool,
+    /// Maximum execution time in seconds (default: 300 = 5 minutes)
+    /// If the hook exceeds this timeout, it will be killed
+    #[serde(default = "default_timeout_seconds")]
+    pub timeout_seconds: u64,
+}
+
+/// Default timeout value: 5 minutes
+fn default_timeout_seconds() -> u64 {
+    300
 }
 
 /// How to execute hooks with respect to changed files

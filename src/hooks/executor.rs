@@ -739,15 +739,70 @@ impl HookExecutor {
             }
         }
 
-        // Execute command
-        let output = command
-            .output()
-            .with_context(|| format!("Failed to execute hook command: {name}"))?;
+        // Execute command with timeout
+        use std::io::Read;
+        use wait_timeout::ChildExt;
 
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        let exit_code = output.status.code().unwrap_or(-1);
-        let success = output.status.success();
+        let timeout = std::time::Duration::from_secs(hook.definition.timeout_seconds);
+        let mut child = command
+            .spawn()
+            .with_context(|| format!("Failed to spawn hook command: {name}"))?;
+
+        // Take stdout and stderr handles before waiting
+        let mut stdout_handle = child.stdout.take().context("Failed to capture stdout")?;
+        let mut stderr_handle = child.stderr.take().context("Failed to capture stderr")?;
+
+        // Spawn threads to read stdout and stderr in parallel
+        // This prevents deadlocks from full pipe buffers
+        let stdout_thread = std::thread::spawn(move || {
+            let mut buf = Vec::new();
+            stdout_handle.read_to_end(&mut buf).ok();
+            buf
+        });
+
+        let stderr_thread = std::thread::spawn(move || {
+            let mut buf = Vec::new();
+            stderr_handle.read_to_end(&mut buf).ok();
+            buf
+        });
+
+        // Wait for the command with timeout
+        let status_option = child
+            .wait_timeout(timeout)
+            .with_context(|| format!("Failed to wait for hook command: {name}"))?;
+
+        let (exit_code, stdout, stderr, success) = match status_option {
+            Some(status) => {
+                // Process finished within timeout - collect output from threads
+                let stdout_buf = stdout_thread.join().unwrap_or_default();
+                let stderr_buf = stderr_thread.join().unwrap_or_default();
+
+                let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
+                let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
+                let exit_code = status.code().unwrap_or(-1);
+                let success = status.success();
+
+                (exit_code, stdout, stderr, success)
+            }
+            None => {
+                // Timeout occurred - kill the process
+                let _ = child.kill();
+                let _ = child.wait(); // Reap the process
+
+                // Still try to collect partial output
+                let stdout_buf = stdout_thread.join().unwrap_or_default();
+                let stderr_buf = stderr_thread.join().unwrap_or_default();
+                let stdout = String::from_utf8_lossy(&stdout_buf);
+                let stderr = String::from_utf8_lossy(&stderr_buf);
+
+                return Err(anyhow::anyhow!(
+                    "Hook '{name}' exceeded timeout of {} seconds and was killed\n\
+                     Partial stdout: {stdout}\n\
+                     Partial stderr: {stderr}",
+                    hook.definition.timeout_seconds
+                ));
+            }
+        };
 
         // Debug output for result
         if crate::debug::is_enabled() && std::io::stderr().is_terminal() {
@@ -1064,20 +1119,80 @@ impl HookExecutor {
             }
         }
 
-        // Execute the command
-        let output = command
-            .output()
-            .with_context(|| format!("Failed to execute hook command: {name}"))?;
+        // Execute command with timeout
+        use std::io::Read;
+        use wait_timeout::ChildExt;
+
+        let timeout = std::time::Duration::from_secs(hook.definition.timeout_seconds);
+        let mut child = command
+            .spawn()
+            .with_context(|| format!("Failed to spawn hook command: {name}"))?;
+
+        // Take stdout and stderr handles before waiting
+        let mut stdout_handle = child.stdout.take().context("Failed to capture stdout")?;
+        let mut stderr_handle = child.stderr.take().context("Failed to capture stderr")?;
+
+        // Spawn threads to read stdout and stderr in parallel
+        // This prevents deadlocks from full pipe buffers
+        let stdout_thread = std::thread::spawn(move || {
+            let mut buf = Vec::new();
+            stdout_handle.read_to_end(&mut buf).ok();
+            buf
+        });
+
+        let stderr_thread = std::thread::spawn(move || {
+            let mut buf = Vec::new();
+            stderr_handle.read_to_end(&mut buf).ok();
+            buf
+        });
+
+        // Wait for the command with timeout
+        let status_option = child
+            .wait_timeout(timeout)
+            .with_context(|| format!("Failed to wait for hook command: {name}"))?;
+
+        let (exit_code, stdout, stderr, success) = match status_option {
+            Some(status) => {
+                // Process finished within timeout - collect output from threads
+                let stdout_buf = stdout_thread.join().unwrap_or_default();
+                let stderr_buf = stderr_thread.join().unwrap_or_default();
+
+                let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
+                let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
+                let exit_code = status.code().unwrap_or(-1);
+                let success = status.success();
+
+                (exit_code, stdout, stderr, success)
+            }
+            None => {
+                // Timeout occurred - kill the process
+                let _ = child.kill();
+                let _ = child.wait(); // Reap the process
+
+                // Still try to collect partial output
+                let stdout_buf = stdout_thread.join().unwrap_or_default();
+                let stderr_buf = stderr_thread.join().unwrap_or_default();
+                let stdout = String::from_utf8_lossy(&stdout_buf);
+                let stderr = String::from_utf8_lossy(&stderr_buf);
+
+                // Cleanup temp file before returning error
+                if let Some(p) = changed_files_file {
+                    let _ = std::fs::remove_file(p);
+                }
+
+                return Err(anyhow::anyhow!(
+                    "Hook '{name}' exceeded timeout of {} seconds and was killed\n\
+                     Partial stdout: {stdout}\n\
+                     Partial stderr: {stderr}",
+                    hook.definition.timeout_seconds
+                ));
+            }
+        };
 
         // Cleanup temp file, if any
         if let Some(p) = changed_files_file {
             let _ = std::fs::remove_file(p);
         }
-
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        let exit_code = output.status.code().unwrap_or(-1);
-        let success = output.status.success();
 
         // Debug output for results
         Self::print_execution_debug_output(name, success, exit_code, &stdout, &stderr);
@@ -1185,6 +1300,7 @@ mod tests {
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::PerFile,
                 run_at_root: false,
+                timeout_seconds: 300,
             },
             working_directory: std::env::temp_dir(),
             source_file: PathBuf::from("test.toml"),
@@ -1398,6 +1514,7 @@ mod tests {
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::PerFile,
                 run_at_root: false,
+                timeout_seconds: 300,
             },
             working_directory: std::env::temp_dir(),
             source_file: PathBuf::from("test.toml"),
@@ -1424,6 +1541,7 @@ mod tests {
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: false,
+                timeout_seconds: 300,
             },
             working_directory: std::env::temp_dir(),
             source_file: PathBuf::from("test.toml"),
@@ -1454,6 +1572,7 @@ mod tests {
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: false,
+                timeout_seconds: 300,
             },
             working_directory: std::env::temp_dir(),
             source_file: PathBuf::from("test.toml"),
@@ -1488,6 +1607,7 @@ mod tests {
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: false,
+                timeout_seconds: 300,
             },
             working_directory: std::env::temp_dir(),
             source_file: PathBuf::from("test.toml"),
@@ -1530,6 +1650,7 @@ mod tests {
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
                 run_at_root: true,
+                timeout_seconds: 300,
             },
             source_file: config_dir.join("hooks.toml"),
             working_directory: config_dir.clone(),
@@ -1548,6 +1669,7 @@ mod tests {
                 requires_files: false,
                 depends_on: None,
                 execution_type: crate::config::parser::ExecutionType::Other,
+                timeout_seconds: 300,
                 run_at_root: false,
             },
             source_file: config_dir.join("hooks.toml"),

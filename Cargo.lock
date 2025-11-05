@@ -1399,6 +1399,7 @@ dependencies = [
  "shellexpand",
  "tempfile",
  "toml 0.9.8",
+ "wait-timeout",
  "workhelix-cli-common",
 ]
 

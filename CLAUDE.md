@@ -113,6 +113,7 @@ depends_on = ["format", "setup"]     # Optional: hook dependencies
 run_always = false                   # Optional: ignore file changes (incompatible with files and requires_files)
 requires_files = false               # Optional: require file list to run (incompatible with run_always)
 run_at_root = false                  # Optional: run at repository root instead of config directory
+timeout_seconds = 300                # Optional: maximum execution time in seconds (default: 300 = 5 minutes)
 ```
 
 **Example: Using tools from custom PATH locations**
@@ -226,6 +227,61 @@ In this example:
 - With `--all-files`: Skipped (no file list available)
 
 **Validation:** The `peter-hook validate` command checks for incompatible configurations and warns if `requires_files` hooks are used in groups that cannot provide files.
+
+### Hook Timeout
+
+All hooks have a configurable timeout to prevent hung processes from blocking the workflow indefinitely.
+
+**Default behavior:**
+- Default timeout: 300 seconds (5 minutes)
+- Hooks exceeding timeout are killed automatically
+- Partial output before timeout is captured and included in error message
+
+**Configuration:**
+```toml
+[hooks.my-hook]
+command = "long-running-command"
+modifies_repository = false
+timeout_seconds = 600  # Override default: allow 10 minutes
+```
+
+**Timeout behavior:**
+- Timer starts when hook process spawns
+- If hook completes within timeout: normal success/failure handling
+- If hook exceeds timeout:
+  - Process is killed (SIGKILL on Unix, TerminateProcess on Windows)
+  - Error returned with timeout message
+  - Any partial stdout/stderr captured before timeout is included in error
+  - Hook is considered failed
+
+**When to adjust timeout:**
+- **Increase** for legitimately slow operations (full test suites, large builds, code generation)
+- **Decrease** for hooks that should be fast (linters, formatters, simple validators)
+- **Default** is appropriate for most hooks
+
+**Example: Slow test suite with custom timeout**
+```toml
+[hooks.integration-tests]
+command = "pytest tests/integration --verbose"
+description = "Full integration test suite (may take 10+ minutes)"
+modifies_repository = false
+execution_type = "in-place"
+timeout_seconds = 900  # 15 minutes for comprehensive test suite
+
+[groups.pre-push]
+includes = ["integration-tests"]
+description = "Pre-push validation"
+```
+
+**Timeout errors provide diagnostic information:**
+```
+Error: Hook 'integration-tests' exceeded timeout of 900 seconds and was killed
+Partial stdout: Running test_api_endpoints...
+PASSED tests/integration/test_api.py::test_login
+PASSED tests/integration/test_api.py::test_logout
+[... more output ...]
+Partial stderr: WARNING: Test database cleanup incomplete
+```
 
 ### Execution Strategies (Parallelism)
 - `sequential`: Run hooks one after another (default)
