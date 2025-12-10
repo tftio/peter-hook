@@ -1,4 +1,4 @@
-# Example Hooks Library (import into your project's hooks.toml)
+# Example Hooks Library (import into your project's .peter-hook.toml)
 
 # ===== RUST BACKEND =====
 [hooks.rust-format]
