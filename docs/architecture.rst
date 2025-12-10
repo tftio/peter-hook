@@ -4,7 +4,7 @@ Architecture
 Core Components
 ---------------
 
-- ``src/config/parser.rs``: Parse and validate ``hooks.toml``; supports string/array commands and execution strategies
+- ``src/config/parser.rs``: Parse and validate ``.peter-hook.toml``; supports string/array commands and execution strategies
 - ``src/hooks/resolver.rs``: Find nearest config; resolve groups; apply file targeting
 - ``src/hooks/dependencies.rs``: Topological sort and phase planning
 - ``src/hooks/executor.rs``: Execute hooks with sequential/parallel/force-parallel strategies; enforce safety
@@ -16,7 +16,7 @@ Core Components
 Execution Model
 ---------------
 
-- Resolve hooks for the requested event from the nearest ``hooks.toml``
+- Resolve hooks for the requested event from the nearest ``.peter-hook.toml``
 - Compute changed files and filter hooks by ``files`` patterns (use ``--all-files`` to skip filtering)
 - If dependencies exist, build an execution plan with parallel phases
 - Execute hooks according to their ``execution_type`` (per-file, in-place, other)

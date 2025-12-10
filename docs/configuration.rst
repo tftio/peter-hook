@@ -1,7 +1,7 @@
 Configuration
 =============
 
-Peter Hook reads configuration from the nearest ``hooks.toml`` file to the current working directory. Child directories override parent configurations: the nearest file wins.
+Peter Hook reads configuration from the nearest ``.peter-hook.toml`` file to the current working directory. Child directories override parent configurations: the nearest file wins.
 
 Hook Definition
 ---------------
@@ -74,7 +74,7 @@ The ``execution_type`` field controls how changed files are passed to hook comma
 Working Directory Control
 --------------------------
 
-By default, hooks run in the directory containing their ``hooks.toml`` file. Use ``run_at_root = true`` to override this and run at the repository root instead:
+By default, hooks run in the directory containing their ``.peter-hook.toml`` file. Use ``run_at_root = true`` to override this and run at the repository root instead:
 
 .. code-block:: toml
 
@@ -89,11 +89,11 @@ Hook Groups
 Imports (Hook Libraries)
 ------------------------
 
-You can split reusable hooks/groups into separate TOML files and import them into your project ``hooks.toml``. Use ``peter-hook validate --trace-imports`` to inspect how imports were resolved, any overrides, cycles that were skipped, and unused imports. Add ``--json`` to emit machine-readable diagnostics.
+You can split reusable hooks/groups into separate TOML files and import them into your project ``.peter-hook.toml``. Use ``peter-hook validate --trace-imports`` to inspect how imports were resolved, any overrides, cycles that were skipped, and unused imports. Add ``--json`` to emit machine-readable diagnostics.
 
 .. code-block:: toml
 
-   # hooks.toml
+   # .peter-hook.toml
    imports = ["../hooks.lib.toml", ".hooks/common.toml"]
 
    [groups.pre-commit]

@@ -6,12 +6,12 @@ Template variables are available in ``command``, ``workdir``, and ``env`` fields
 Built-in Variables
 ------------------
 
-- ``{HOOK_DIR}``: Directory containing the ``hooks.toml``
+- ``{HOOK_DIR}``: Directory containing the ``.peter-hook.toml``
 - ``{WORKING_DIR}``: Working directory when the hook runs
 - ``{REPO_ROOT}``: Git repository root
 - ``{HOOK_DIR_REL}``: ``HOOK_DIR`` relative to repo root
 - ``{WORKING_DIR_REL}``: ``WORKING_DIR`` relative to repo root
-- ``{PROJECT_NAME}``: Name of directory containing ``hooks.toml``
+- ``{PROJECT_NAME}``: Name of directory containing ``.peter-hook.toml``
 - ``{HOME_DIR}``: User home directory
 - ``{PATH}``: Current PATH environment variable (useful for extending PATH)
 - ``{IS_WORKTREE}``: "true" or "false" - whether running in a worktree

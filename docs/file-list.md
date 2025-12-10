@@ -136,7 +136,7 @@ Early validation prevents surprises at runtime. Users get immediate feedback dur
 ## Usage Example
 
 ```toml
-# hooks.toml
+# .peter-hook.toml
 [hooks.pytest]
 command = "pytest"
 description = "Run Python tests only when Python files change"

@@ -53,7 +53,7 @@ Options:
 validate
 ^^^^^^^^
 
-Parse and validate the nearest ``hooks.toml``. Prints discovered hooks and groups.
+Parse and validate the nearest ``.peter-hook.toml``. Prints discovered hooks and groups.
 
 Options:
 
@@ -121,7 +121,7 @@ Positional:
 The generated scripts now include dynamic completions for key verbs:
 
 - ``run`` suggests only git hook events that peter-hook knows how to install.
-- ``lint`` suggests hook and group names discovered from the nearest ``hooks.toml`` (placeholder groups are skipped).
+- ``lint`` suggests hook and group names discovered from the nearest ``.peter-hook.toml`` (placeholder groups are skipped).
 
 .. note::
 

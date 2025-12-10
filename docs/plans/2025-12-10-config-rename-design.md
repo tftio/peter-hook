@@ -1,4 +1,4 @@
-# Configuration File Rename: hooks.toml → .peter-hook.toml
+# Configuration File Rename: .peter-hook.toml → .peter-hook.toml
 
 **Date:** 2025-12-10
 **Version:** 5.0.0 (Breaking Change)
@@ -6,12 +6,12 @@
 
 ## Overview
 
-Rename the configuration file from `hooks.toml` to `.peter-hook.toml` as a breaking change in version 5.0.0.
+Rename the configuration file from `.peter-hook.toml` to `.peter-hook.toml` as a breaking change in version 5.0.0.
 
 ### Goal
 
-- Update configuration file discovery to use `.peter-hook.toml` instead of `hooks.toml`
-- Provide clear, actionable error messages when deprecated `hooks.toml` files are detected
+- Update configuration file discovery to use `.peter-hook.toml` instead of `.peter-hook.toml`
+- Provide clear, actionable error messages when deprecated `.peter-hook.toml` files are detected
 - Hard-fail immediately when deprecated files exist (no grace period)
 
 ### Rationale
@@ -33,7 +33,7 @@ pub fn find_config_file(&self) -> Result<Option<PathBuf>> {
     let mut current = self.current_dir.as_path();
 
     loop {
-        let config_path = current.join(".peter-hook.toml");  // Changed from "hooks.toml"
+        let config_path = current.join(".peter-hook.toml");  // Changed from ".peter-hook.toml"
         if config_path.exists() {
             return Ok(Some(config_path));
         }
@@ -51,7 +51,7 @@ pub fn find_config_file(&self) -> Result<Option<PathBuf>> {
 
 **Add deprecation checker in `src/main.rs`:**
 
-Create a new function that walks the repository tree looking for `hooks.toml` files:
+Create a new function that walks the repository tree looking for `.peter-hook.toml` files:
 
 ```rust
 fn check_for_deprecated_config_files() -> Result<()> {
@@ -59,15 +59,15 @@ fn check_for_deprecated_config_files() -> Result<()> {
     let mut deprecated_files = Vec::new();
 
     // Walk repository from root, respecting .gitignore
-    // Collect all paths ending in "hooks.toml"
+    // Collect all paths ending in ".peter-hook.toml"
 
     if !deprecated_files.is_empty() {
-        eprintln!("Error: hooks.toml is no longer supported. Rename to .peter-hook.toml\n");
+        eprintln!("Error: .peter-hook.toml is no longer supported. Rename to .peter-hook.toml\n");
         eprintln!("Found deprecated files:");
         for file in &deprecated_files {
             eprintln!("  - {}", file.display());
         }
-        eprintln!("\nRun in each directory: mv hooks.toml .peter-hook.toml");
+        eprintln!("\nRun in each directory: mv .peter-hook.toml .peter-hook.toml");
         std::process::exit(1);
     }
 
@@ -87,24 +87,24 @@ All other commands (`run`, `install`, `validate`, `lint`, `list`, `config`, etc.
 
 **For single deprecated file:**
 ```
-Error: hooks.toml is no longer supported. Rename to .peter-hook.toml
+Error: .peter-hook.toml is no longer supported. Rename to .peter-hook.toml
 
 Found deprecated files:
-  - ./hooks.toml
+  - ./.peter-hook.toml
 
-Run in each directory: mv hooks.toml .peter-hook.toml
+Run in each directory: mv .peter-hook.toml .peter-hook.toml
 ```
 
 **For multiple deprecated files (monorepo):**
 ```
-Error: hooks.toml is no longer supported. Rename to .peter-hook.toml
+Error: .peter-hook.toml is no longer supported. Rename to .peter-hook.toml
 
 Found deprecated files:
-  - ./hooks.toml
-  - ./backend/hooks.toml
-  - ./frontend/hooks.toml
+  - ./.peter-hook.toml
+  - ./backend/.peter-hook.toml
+  - ./frontend/.peter-hook.toml
 
-Run in each directory: mv hooks.toml .peter-hook.toml
+Run in each directory: mv .peter-hook.toml .peter-hook.toml
 ```
 
 ## Test Updates
@@ -114,7 +114,7 @@ Run in each directory: mv hooks.toml .peter-hook.toml
 **1. Test fixtures and setup code:**
 ```rust
 // Before:
-std::fs::write(&temp_dir.join("hooks.toml"), config_content)?;
+std::fs::write(&temp_dir.join(".peter-hook.toml"), config_content)?;
 
 // After:
 std::fs::write(&temp_dir.join(".peter-hook.toml"), config_content)?;
@@ -123,7 +123,7 @@ std::fs::write(&temp_dir.join(".peter-hook.toml"), config_content)?;
 **2. Test assertions checking file paths:**
 ```rust
 // Before:
-assert!(temp_dir.join("hooks.toml").exists());
+assert!(temp_dir.join(".peter-hook.toml").exists());
 
 // After:
 assert!(temp_dir.join(".peter-hook.toml").exists());
@@ -132,7 +132,7 @@ assert!(temp_dir.join(".peter-hook.toml").exists());
 **3. Error message assertions:**
 ```rust
 // Before:
-assert!(output.contains("hooks.toml"));
+assert!(output.contains(".peter-hook.toml"));
 
 // After:
 assert!(output.contains(".peter-hook.toml"));
@@ -143,18 +143,18 @@ assert!(output.contains(".peter-hook.toml"));
 Add tests in `tests/deprecation_tests.rs`:
 
 1. **Test single deprecated file detection:**
-   - Create `hooks.toml` in temp repo
+   - Create `.peter-hook.toml` in temp repo
    - Run any command (except `version`/`license`)
    - Assert exit code 1
    - Assert error message contains file path and fix command
 
 2. **Test multiple deprecated files:**
-   - Create `hooks.toml` in multiple subdirectories
+   - Create `.peter-hook.toml` in multiple subdirectories
    - Run command
    - Assert all files are listed in error message
 
 3. **Test version/license commands still work:**
-   - Create `hooks.toml` in temp repo
+   - Create `.peter-hook.toml` in temp repo
    - Run `peter-hook version`
    - Assert success (exit 0)
    - Run `peter-hook license`
@@ -212,7 +212,7 @@ Then manually review changes to ensure correctness, especially in:
 
 **Rename example files:**
 - `examples/file-targeting.toml` → `examples/.peter-hook-file-targeting.toml`
-- `examples/parallel-hooks.toml` → `examples/.peter-hook-parallel.toml`
+- `examples/parallel-.peter-hook.toml` → `examples/.peter-hook-parallel.toml`
 - `examples/advanced-features.toml` → `examples/.peter-hook-advanced.toml`
 - `examples/hooks-with-imports.toml` → `examples/.peter-hook-with-imports.toml`
 
@@ -223,7 +223,7 @@ Then manually review changes to ensure correctness, especially in:
 
 Rename the project's own configuration file:
 ```bash
-mv /Users/jfb/Projects/rust/peter-hook/hooks.toml /Users/jfb/Projects/rust/peter-hook/.peter-hook.toml
+mv /Users/jfb/Projects/rust/peter-hook/.peter-hook.toml /Users/jfb/Projects/rust/peter-hook/.peter-hook.toml
 ```
 
 ### CHANGELOG.md
@@ -235,27 +235,27 @@ Add entry for version 5.0.0:
 
 ### BREAKING CHANGES
 
-- **Configuration file renamed from `hooks.toml` to `.peter-hook.toml`**
-  - Peter-hook now searches for `.peter-hook.toml` instead of `hooks.toml`
-  - If `hooks.toml` files are detected, peter-hook will error and refuse to run
-  - Migration: Rename all `hooks.toml` files to `.peter-hook.toml`
+- **Configuration file renamed from `.peter-hook.toml` to `.peter-hook.toml`**
+  - Peter-hook now searches for `.peter-hook.toml` instead of `.peter-hook.toml`
+  - If `.peter-hook.toml` files are detected, peter-hook will error and refuse to run
+  - Migration: Rename all `.peter-hook.toml` files to `.peter-hook.toml`
   - Commands affected: All commands except `version` and `license`
 
 **Migration guide:**
 
 For single configuration:
 ```bash
-mv hooks.toml .peter-hook.toml
+mv .peter-hook.toml .peter-hook.toml
 ```
 
 For monorepos with multiple configurations:
 ```bash
 # Find all deprecated files
-find . -name "hooks.toml" -type f
+find . -name ".peter-hook.toml" -type f
 
 # Rename each one
-cd backend && mv hooks.toml .peter-hook.toml
-cd ../frontend && mv hooks.toml .peter-hook.toml
+cd backend && mv .peter-hook.toml .peter-hook.toml
+cd ../frontend && mv .peter-hook.toml .peter-hook.toml
 ```
 
 **Why this change:**
@@ -270,11 +270,11 @@ cd ../frontend && mv hooks.toml .peter-hook.toml
 1. **Add deprecation detection** (new code)
    - Implement `check_for_deprecated_config_files()` in `src/main.rs`
    - Hook into command routing
-   - Test manually with `hooks.toml` present
+   - Test manually with `.peter-hook.toml` present
 
 2. **Update core resolver** (modify existing)
    - Change `find_config_file()` in `src/hooks/resolver.rs`
-   - Update constant/string literal from `"hooks.toml"` to `".peter-hook.toml"`
+   - Update constant/string literal from `".peter-hook.toml"` to `".peter-hook.toml"`
 
 3. **Update tests** (bulk changes)
    - Run find/replace across test files
@@ -290,7 +290,7 @@ cd ../frontend && mv hooks.toml .peter-hook.toml
    - Update any cross-references
 
 6. **Rename project's own config** (dogfooding)
-   - `mv hooks.toml .peter-hook.toml`
+   - `mv .peter-hook.toml .peter-hook.toml`
    - Test that peter-hook still works for development
 
 7. **Update CHANGELOG and bump version** (final step)
@@ -302,13 +302,13 @@ cd ../frontend && mv hooks.toml .peter-hook.toml
 
 ### Risk 1: Missing References
 
-**Risk:** Some `hooks.toml` references may be missed in bulk updates.
+**Risk:** Some `.peter-hook.toml` references may be missed in bulk updates.
 
 **Mitigation:**
 - Use comprehensive grep/ripgrep search after changes
 - Run full test suite (all 425+ occurrences should be covered by tests)
 - Manual testing with both old and new config names
-- Search for literal string `"hooks.toml"` in codebase after changes
+- Search for literal string `".peter-hook.toml"` in codebase after changes
 
 ### Risk 2: Breaking User Workflows
 
@@ -333,7 +333,7 @@ cd ../frontend && mv hooks.toml .peter-hook.toml
 
 ### Risk 4: CI/CD Pipeline Breakage
 
-**Risk:** Users' CI pipelines may break if they reference `hooks.toml` in scripts.
+**Risk:** Users' CI pipelines may break if they reference `.peter-hook.toml` in scripts.
 
 **Mitigation:**
 - Major version bump signals need for review before upgrading
@@ -347,12 +347,12 @@ Before release, verify:
 
 - [ ] All existing tests pass with new config name
 - [ ] New deprecation tests verify error behavior
-- [ ] Manual testing: `hooks.toml` triggers error with correct message
+- [ ] Manual testing: `.peter-hook.toml` triggers error with correct message
 - [ ] Manual testing: `.peter-hook.toml` works correctly
 - [ ] Manual testing: Multiple deprecated files all listed in error
-- [ ] Manual testing: `version` and `license` commands work even with `hooks.toml`
-- [ ] Manual testing: All other commands fail with `hooks.toml`
-- [ ] Grep/ripgrep search finds no remaining `hooks.toml` references in code (except deprecation checker)
+- [ ] Manual testing: `version` and `license` commands work even with `.peter-hook.toml`
+- [ ] Manual testing: All other commands fail with `.peter-hook.toml`
+- [ ] Grep/ripgrep search finds no remaining `.peter-hook.toml` references in code (except deprecation checker)
 - [ ] Documentation examples all use `.peter-hook.toml`
 - [ ] Example files renamed and working
 - [ ] Project's own config renamed and working
@@ -383,14 +383,14 @@ Before release, verify:
 - All files in `examples/` directory (rename and update)
 
 **Project config:**
-- `hooks.toml` → `.peter-hook.toml`
+- `.peter-hook.toml` → `.peter-hook.toml`
 
 **Total:** ~75 files requiring updates
 
 ## Success Criteria
 
-1. ✅ Peter-hook searches for `.peter-hook.toml` instead of `hooks.toml`
-2. ✅ Presence of `hooks.toml` causes immediate error with helpful message
+1. ✅ Peter-hook searches for `.peter-hook.toml` instead of `.peter-hook.toml`
+2. ✅ Presence of `.peter-hook.toml` causes immediate error with helpful message
 3. ✅ Error message lists ALL deprecated files in repository
 4. ✅ Error message provides exact fix command
 5. ✅ All tests pass with new configuration name

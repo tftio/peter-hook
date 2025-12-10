@@ -20,7 +20,7 @@ The template expansion system in peter-hook has been thoroughly audited for comm
 Peter-hook uses a **whitelist-only** approach for template variables:
 
 **Allowed Variables**:
-- `{HOOK_DIR}` - Directory containing hooks.toml
+- `{HOOK_DIR}` - Directory containing .peter-hook.toml
 - `{REPO_ROOT}` - Git repository root
 - `{HOME_DIR}` - User home directory ($HOME)
 - `{PATH}` - Current PATH for extending
@@ -377,7 +377,7 @@ Peter-hook protects against:
 ### Out of Scope
 
 Peter-hook does NOT protect against:
-- Malicious hooks.toml files (user controls config)
+- Malicious .peter-hook.toml files (user controls config)
 - Compromised repositories (user controls repo)
 - OS-level vulnerabilities (relies on system security)
 - Network-based attacks (no network functionality)
@@ -421,7 +421,7 @@ Peter-hook does NOT protect against:
 ### For Users
 
 1. **Trust Your Repository**: Only run peter-hook in repositories you trust
-2. **Review Hooks**: Inspect hooks.toml files before running hooks
+2. **Review Hooks**: Inspect .peter-hook.toml files before running hooks
 3. **Use `{CHANGED_FILES_FILE}`**: For maximum safety with filenames
 4. **Keep Updated**: Install security updates promptly
 
