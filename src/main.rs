@@ -24,17 +24,12 @@ use ignore::WalkBuilder;
 /// Walks the repository tree respecting .gitignore and collects all
 /// hooks.toml files. If any are found, prints error message and exits.
 fn check_for_deprecated_config_files() -> Result<()> {
-    use std::env;
-
     // Try to find repository root
     let current_dir = env::current_dir().context("Failed to get current directory")?;
 
-    let repo = match GitRepository::find_from_dir(&current_dir) {
-        Ok(repo) => repo,
-        Err(_) => {
-            // Not in a git repository, skip check
-            return Ok(());
-        }
+    let Ok(repo) = GitRepository::find_from_dir(&current_dir) else {
+        // Not in a git repository, skip check
+        return Ok(());
     };
 
     let repo_root = repo.git_dir.parent()
@@ -50,13 +45,13 @@ fn check_for_deprecated_config_files() -> Result<()> {
     {
         let entry = entry.context("Failed to read directory entry")?;
 
-        if entry.file_type().map_or(false, |ft| ft.is_file()) {
+        if entry.file_type().is_some_and(|ft| ft.is_file()) {
             if let Some(file_name) = entry.path().file_name() {
                 if file_name == "hooks.toml" {
                     // Store relative path from repo root
                     let relative_path = entry.path()
                         .strip_prefix(repo_root)
-                        .unwrap_or(entry.path());
+                        .unwrap_or_else(|_| entry.path());
                     deprecated_files.push(relative_path.to_path_buf());
                 }
             }
