@@ -1647,7 +1647,7 @@ mod tests {
                 run_at_root: true,
                 timeout_seconds: 300,
             },
-            source_file: config_dir.join("hooks.toml"),
+            source_file: config_dir.join(".peter-hook.toml"),
             working_directory: config_dir.clone(),
         };
 
@@ -1667,7 +1667,7 @@ mod tests {
                 timeout_seconds: 300,
                 run_at_root: false,
             },
-            source_file: config_dir.join("hooks.toml"),
+            source_file: config_dir.join(".peter-hook.toml"),
             working_directory: config_dir.clone(),
         };
 

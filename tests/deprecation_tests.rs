@@ -9,7 +9,7 @@ fn bin_path() -> std::path::PathBuf {
     assert_cmd::cargo::cargo_bin("peter-hook")
 }
 
-/// Helper to create a test repository with a hooks.toml file
+/// Helper to create a test repository with a hooks.toml file (deprecated)
 fn create_repo_with_deprecated_config() -> (TempDir, std::path::PathBuf) {
     let temp_dir = TempDir::new().unwrap();
 
@@ -45,7 +45,7 @@ fn test_deprecation_error_on_single_file() {
 
     // Check error message contains key information
     assert!(stderr.contains("hooks.toml is no longer supported"));
-    assert!(stderr.contains(".peter-hook.toml"));
+    assert!(stderr.contains("hooks.toml"));
     assert!(stderr.contains("hooks.toml")); // Should list the file
     assert!(stderr.contains("mv hooks.toml .peter-hook.toml")); // Should show fix
 }

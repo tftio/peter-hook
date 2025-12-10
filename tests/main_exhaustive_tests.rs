@@ -28,7 +28,7 @@ fn test_run_no_changed_files() {
         .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -61,7 +61,7 @@ fn test_run_single_changed_file() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check]
 command = "echo checking"
@@ -104,7 +104,7 @@ fn test_run_five_changed_files() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check]
 command = "echo checking"
@@ -147,7 +147,7 @@ fn test_run_six_changed_files() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check]
 command = "echo checking"
@@ -179,7 +179,7 @@ fn test_run_single_hook() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.single]
 command = "echo single"
@@ -210,7 +210,7 @@ fn test_run_two_to_three_hooks() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.hook1]
 command = "echo 1"
@@ -252,7 +252,7 @@ fn test_run_four_to_six_hooks() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.h1]
 command = "echo 1"
@@ -315,7 +315,7 @@ includes = ["hook1", "hook2", "hook3", "hook4", "hook5", "hook6", "hook7", "hook
 "#,
     );
 
-    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), config).unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -334,7 +334,7 @@ fn test_run_hook_with_run_always_flag() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.always-hook]
 command = "echo always"
@@ -366,7 +366,7 @@ fn test_run_hook_no_patterns() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.no-patterns]
 command = "echo no patterns"
@@ -391,7 +391,7 @@ fn test_lint_no_matching_files() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.rust-only]
 command = "echo rust"
@@ -420,7 +420,7 @@ fn test_lint_multi_hook_group() {
     fs::write(temp_dir.path().join("test.txt"), "content").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check1]
 command = "echo check1"
@@ -460,7 +460,7 @@ fn test_validate_shows_merges() {
     fs::create_dir(&base).unwrap();
 
     fs::write(
-        base.join("hooks.toml"),
+        base.join(".peter-hook.toml"),
         r#"
 [hooks.base-hook]
 command = "echo base"
@@ -471,9 +471,9 @@ files = ["*.txt"]
     .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
-imports = ["base/hooks.toml"]
+imports = ["base/.peter-hook.toml"]
 
 [hooks.base-hook]
 command = "echo overridden"
@@ -505,7 +505,7 @@ fn test_run_hook_success_exit_code() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.success]
 command = "true"
@@ -537,7 +537,7 @@ fn test_run_hook_failure_exit_code() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.failure]
 command = "exit 1"
@@ -597,7 +597,7 @@ fn test_lint_file_count_display() {
     }
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.rust]
 command = "echo checking rust"
@@ -629,7 +629,7 @@ fn test_run_mixed_execution_types() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.per-file]
 command = "echo"
@@ -665,7 +665,7 @@ fn test_validate_with_warnings() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -695,7 +695,7 @@ fn test_run_hook_with_output_and_errors() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.verbose]
 command = "echo stdout && echo stderr >&2"

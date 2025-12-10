@@ -123,7 +123,7 @@ placeholder = true
 includes = []
 "#;
 
-    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), config).unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -155,7 +155,7 @@ fn test_doctor_command() {
 fn test_validate_no_config() {
     let temp_dir = TempDir::new().unwrap();
 
-    // Initialize git repo but no hooks.toml
+    // Initialize git repo but no .peter-hook.toml
     Git2Repository::init(temp_dir.path()).unwrap();
 
     let output = Command::new(bin_path())
@@ -175,13 +175,13 @@ fn test_validate_with_valid_config() {
     // Initialize git repo
     Git2Repository::init(temp_dir.path()).unwrap();
 
-    // Create valid hooks.toml
+    // Create valid .peter-hook.toml
     let config = r#"
 [hooks.test]
 command = "echo test"
 modifies_repository = false
 "#;
-    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), config).unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -199,12 +199,12 @@ fn test_validate_with_invalid_config() {
     // Initialize git repo
     Git2Repository::init(temp_dir.path()).unwrap();
 
-    // Create invalid hooks.toml
+    // Create invalid .peter-hook.toml
     let config = r"
 [hooks.broken]
 # Missing required fields
 ";
-    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), config).unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -239,7 +239,7 @@ fn test_list_with_config() {
     // Initialize git repo
     Git2Repository::init(temp_dir.path()).unwrap();
 
-    // Create hooks.toml
+    // Create .peter-hook.toml
     let config = r#"
 [hooks.test1]
 command = "echo test1"
@@ -249,7 +249,7 @@ modifies_repository = false
 command = "echo test2"
 modifies_repository = true
 "#;
-    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), config).unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -298,7 +298,7 @@ fn test_install_in_git_repo() {
 command = "echo test"
 modifies_repository = false
 "#;
-    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), config).unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -367,7 +367,7 @@ fn test_lint_mode_not_in_git_repo() {
 command = "echo test"
 modifies_repository = false
 "#;
-    fs::write(temp_dir.path().join("hooks.toml"), config).unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), config).unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())

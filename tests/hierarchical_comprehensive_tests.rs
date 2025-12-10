@@ -15,7 +15,7 @@ fn test_hierarchical_simple_config() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -50,7 +50,7 @@ fn test_hierarchical_nested_configs() {
 
     // Root config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo root"
@@ -63,7 +63,7 @@ modifies_repository = false
     let subdir = temp_dir.path().join("sub");
     fs::create_dir(&subdir).unwrap();
     fs::write(
-        subdir.join("hooks.toml"),
+        subdir.join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo nested"
@@ -125,7 +125,7 @@ fn test_hierarchical_with_working_directory_mode() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -163,7 +163,7 @@ fn test_hierarchical_with_staged_mode() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -198,7 +198,7 @@ fn test_hierarchical_three_level_nesting() {
 
     // Level 1 (root)
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo root"
@@ -211,7 +211,7 @@ modifies_repository = false
     let l2 = temp_dir.path().join("level2");
     fs::create_dir(&l2).unwrap();
     fs::write(
-        l2.join("hooks.toml"),
+        l2.join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo level2"
@@ -224,7 +224,7 @@ modifies_repository = false
     let l3 = l2.join("level3");
     fs::create_dir(&l3).unwrap();
     fs::write(
-        l3.join("hooks.toml"),
+        l3.join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo level3"
@@ -258,7 +258,7 @@ fn test_hierarchical_with_groups() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.a]
 command = "echo a"
@@ -299,7 +299,7 @@ fn test_hierarchical_nonexistent_event() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -334,7 +334,7 @@ fn test_hierarchical_in_worktree() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -374,7 +374,7 @@ fn test_hierarchical_multiple_configs_same_level() {
     fs::create_dir(&sub2).unwrap();
 
     fs::write(
-        sub1.join("hooks.toml"),
+        sub1.join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo sub1"
@@ -384,7 +384,7 @@ modifies_repository = false
     .unwrap();
 
     fs::write(
-        sub2.join("hooks.toml"),
+        sub2.join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo sub2"

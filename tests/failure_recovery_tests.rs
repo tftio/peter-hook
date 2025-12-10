@@ -77,7 +77,7 @@ includes = ["success-1", "failure", "success-2"]
 description = "Mixed success/failure"
 execution_strategy = "parallel"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -146,7 +146,7 @@ includes = ["parallel-fail", "parallel-success", "sequential-continues"]
 description = "Fail in parallel phase"
 execution_strategy = "parallel"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -211,7 +211,7 @@ includes = ["seq-1-fail", "seq-2-continues", "seq-3-continues"]
 description = "Sequential failure"
 execution_strategy = "sequential"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -271,7 +271,7 @@ includes = ["timeout-hook", "continues-after-timeout"]
 description = "Timeout failure"
 execution_strategy = "sequential"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -323,7 +323,7 @@ timeout_seconds = 5
 includes = ["my-custom-validation-hook"]
 description = "Validation hooks"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -375,7 +375,7 @@ timeout_seconds = 5
 includes = ["nonexistent-tool"]
 description = "Nonexistent command"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -444,7 +444,7 @@ includes = ["pass-1", "pass-2", "fail", "pass-3", "pass-4"]
 description = "Partial failure"
 execution_strategy = "parallel"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -484,7 +484,7 @@ timeout_seconds = 5
 includes = ["exit-2"]
 description = "Non-standard exit code"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -527,7 +527,7 @@ timeout_seconds = 5
 includes = ["parent-fail", "child-depends-on-parent"]
 description = "Dependency chain"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -591,7 +591,7 @@ includes = ["fail-1", "fail-2", "fail-3"]
 description = "Multiple failures"
 execution_strategy = "parallel"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -643,7 +643,7 @@ timeout_seconds = 5
 includes = ["would-fail"]
 description = "Would fail in real run"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();

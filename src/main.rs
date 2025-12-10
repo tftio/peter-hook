@@ -413,7 +413,7 @@ fn run_hooks(event: &str, _git_args: &[String], all_files: bool, dry_run: bool) 
         // No config groups found
         if io::stdout().is_terminal() {
             println!("❌ \x1b[33mNo hooks configured for event:\x1b[0m \x1b[1m{event}\x1b[0m");
-            println!("💡 \x1b[36mTip:\x1b[0m Check your \x1b[33mhooks.toml\x1b[0m configuration");
+            println!("💡 \x1b[36mTip:\x1b[0m Check your \x1b[33m.peter-hook.toml\x1b[0m configuration");
         } else {
             println!("No hooks found for event: {event}");
         }
@@ -880,7 +880,7 @@ fn validate_config(trace_imports: bool, json: bool) -> Result<()> {
             }
         }
         None => {
-            println!("No hooks.toml file found in current directory or parent directories");
+            println!("No .peter-hook.toml file found in current directory or parent directories");
         }
     }
 

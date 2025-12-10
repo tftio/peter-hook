@@ -31,7 +31,7 @@ fn test_install_with_existing_unmanaged_hooks_force() {
 
     // Create config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo new"
@@ -74,7 +74,7 @@ fn test_install_with_existing_unmanaged_hooks_no_force() {
 
     // Create config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo new"
@@ -109,7 +109,7 @@ fn test_install_with_all_worktree_strategies() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -143,7 +143,7 @@ fn test_install_creates_executable_hooks() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -180,7 +180,7 @@ fn test_install_report_print_summary() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -215,7 +215,7 @@ fn test_install_with_complex_dependencies() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.setup]
 command = "echo setup"
@@ -274,7 +274,7 @@ modifies_repository = false
 
     // Create main config with import
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 imports = ["imports/base.toml"]
 

@@ -28,7 +28,7 @@ modifies_repository = false
     .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 imports = ["lib/base.toml"]
 
@@ -59,7 +59,7 @@ fn test_validate_with_trace_imports_and_json() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -89,7 +89,7 @@ fn test_validate_shows_hook_names() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.hook1]
 command = "echo 1"
@@ -125,7 +125,7 @@ fn test_validate_empty_config_shows_message() {
     let temp_dir = TempDir::new().unwrap();
     Git2Repository::init(temp_dir.path()).unwrap();
 
-    fs::write(temp_dir.path().join("hooks.toml"), "").unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), "").unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -150,7 +150,7 @@ fn test_validate_with_merge_diagnostics() {
     let base = temp_dir.path().join("base");
     fs::create_dir(&base).unwrap();
     fs::write(
-        base.join("hooks.toml"),
+        base.join(".peter-hook.toml"),
         r#"
 [hooks.shared]
 command = "echo shared"
@@ -161,9 +161,9 @@ modifies_repository = false
 
     // Create override config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
-imports = ["base/hooks.toml"]
+imports = ["base/.peter-hook.toml"]
 
 [hooks.shared]
 command = "echo overridden"
@@ -200,7 +200,7 @@ modifies_repository = false
     .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 imports = ["lib/base.toml"]
 
@@ -231,7 +231,7 @@ fn test_validate_json_output_format() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"

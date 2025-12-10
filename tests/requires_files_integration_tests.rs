@@ -41,8 +41,8 @@ fn setup_test_repo_with_config(config_content: &str) -> TempDir {
         .output()
         .unwrap();
 
-    // Write hooks.toml
-    fs::write(repo_path.join("hooks.toml"), config_content).unwrap();
+    // Write .peter-hook.toml
+    fs::write(repo_path.join(".peter-hook.toml"), config_content).unwrap();
 
     temp_dir
 }
@@ -271,7 +271,7 @@ modifies_repository = false
 [groups.pre-commit]
 includes = ["test-hook"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), root_config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), root_config).unwrap();
 
     // Create subdirectory with its own config
     let subdir = repo_path.join("subdir");
@@ -288,7 +288,7 @@ files = ["*.txt"]
 [groups.pre-commit]
 includes = ["test-hook"]
 "#;
-    fs::write(subdir.join("hooks.toml"), child_config).unwrap();
+    fs::write(subdir.join(".peter-hook.toml"), child_config).unwrap();
 
     // Create and stage a file in subdirectory
     fs::write(subdir.join("test.txt"), "content").unwrap();

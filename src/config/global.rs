@@ -266,7 +266,7 @@ mod tests {
 
         assert!(config.is_absolute_path_allowed(&test_file).unwrap());
 
-        let outside_file = home_dir.join("other-dir").join("hooks.toml");
+        let outside_file = home_dir.join("other-dir").join(".peter-hook.toml");
         if let Some(parent) = outside_file.parent() {
             if let Err(err) = fs::create_dir_all(parent) {
                 if err.kind() == std::io::ErrorKind::PermissionDenied {

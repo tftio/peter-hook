@@ -57,7 +57,7 @@ fn test_run_deep_hierarchy() {
     {
         let level_path = temp_dir.path().join(level);
         fs::write(
-            level_path.join("hooks.toml"),
+            level_path.join(".peter-hook.toml"),
             format!(
                 r#"
 [hooks.level-{i}]
@@ -109,7 +109,7 @@ fn test_install_backs_up_existing_hooks() {
     }
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo new hook"
@@ -141,7 +141,7 @@ fn test_uninstall_restores_backup() {
 
     // Create hooks and install
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -175,7 +175,7 @@ fn test_run_multiple_config_groups() {
 
     // Root config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.root-check]
 command = "echo root"
@@ -189,7 +189,7 @@ files = ["*.txt"]
     let sub1 = temp_dir.path().join("sub1");
     fs::create_dir(&sub1).unwrap();
     fs::write(
-        sub1.join("hooks.toml"),
+        sub1.join(".peter-hook.toml"),
         r#"
 [hooks.sub-check]
 command = "echo sub1"
@@ -272,7 +272,7 @@ fn test_validate_nested_imports() {
     fs::create_dir(&lib2).unwrap();
 
     fs::write(
-        lib2.join("hooks.toml"),
+        lib2.join(".peter-hook.toml"),
         r#"
 [hooks.base]
 command = "echo base"
@@ -282,9 +282,9 @@ modifies_repository = false
     .unwrap();
 
     fs::write(
-        lib1.join("hooks.toml"),
+        lib1.join(".peter-hook.toml"),
         r#"
-imports = ["../lib2/hooks.toml"]
+imports = ["../lib2/.peter-hook.toml"]
 
 [hooks.mid]
 command = "echo mid"
@@ -294,9 +294,9 @@ modifies_repository = false
     .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
-imports = ["lib1/hooks.toml"]
+imports = ["lib1/.peter-hook.toml"]
 
 [hooks.main]
 command = "echo main"
@@ -330,7 +330,7 @@ fn test_lint_many_files() {
     }
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check-all]
 command = "echo checking"

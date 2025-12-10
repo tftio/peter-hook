@@ -41,8 +41,8 @@ fn setup_test_repo_with_config(config_content: &str) -> TempDir {
         .output()
         .unwrap();
 
-    // Write hooks.toml
-    fs::write(repo_path.join("hooks.toml"), config_content).unwrap();
+    // Write .peter-hook.toml
+    fs::write(repo_path.join(".peter-hook.toml"), config_content).unwrap();
 
     temp_dir
 }
