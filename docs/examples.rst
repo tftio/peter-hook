@@ -4,20 +4,20 @@ Examples
 File Targeting
 --------------
 
-.. literalinclude:: ../examples/file-targeting.toml
+.. literalinclude:: ../examples/.peter-hook-file-targeting.toml
    :language: toml
-   :caption: examples/file-targeting.toml
+   :caption: examples/.peter-hook-file-targeting.toml
 
 Parallel Hooks
 --------------
 
-.. literalinclude:: ../examples/parallel-hooks.toml
+.. literalinclude:: ../examples/.peter-hook-parallel.toml
    :language: toml
-   :caption: examples/parallel-hooks.toml
+   :caption: examples/.peter-hook-parallel.toml
 
 Advanced Features
 -----------------
 
-.. literalinclude:: ../examples/advanced-features.toml
+.. literalinclude:: ../examples/.peter-hook-advanced.toml
    :language: toml
-   :caption: examples/advanced-features.toml
+   :caption: examples/.peter-hook-advanced.toml
