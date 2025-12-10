@@ -11,9 +11,9 @@ File Targeting
 Parallel Hooks
 --------------
 
-.. literalinclude:: ../examples/parallel-.peter-hook.toml
+.. literalinclude:: ../examples/parallel-hooks.toml
    :language: toml
-   :caption: examples/parallel-.peter-hook.toml
+   :caption: examples/parallel-hooks.toml
 
 Advanced Features
 -----------------
