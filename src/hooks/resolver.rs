@@ -77,7 +77,7 @@ impl HookResolver {
         let mut current = self.current_dir.as_path();
 
         loop {
-            let config_path = current.join("hooks.toml");
+            let config_path = current.join(".peter-hook.toml");
             if config_path.exists() {
                 return Ok(Some(config_path));
             }
