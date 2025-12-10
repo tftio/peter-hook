@@ -92,7 +92,7 @@ just bump-version patch     # Bump version only (no release)
 - **CLI Interface** (`src/cli/mod.rs`): Command-line interface
 
 ### Key Features
-- **Hierarchical Configuration**: Nearest `hooks.toml` file wins
+- **Hierarchical Configuration**: Nearest `.peter-hook.toml` file wins
 - **Safe Parallel Execution**: Repository-modifying hooks run sequentially, read-only hooks run in parallel
 - **Hook Groups**: Combine individual hooks with execution strategies
 - **Cross-platform**: Rust implementation supporting macOS, Linux, Windows
@@ -333,7 +333,7 @@ Partial stderr: WARNING: Test database cleanup incomplete
 
 ### Multi-Config Group Execution Behavior
 
-When multiple config groups are involved (different `hooks.toml` files for different changed files), peter-hook executes them sequentially with fail-fast semantics:
+When multiple config groups are involved (different `.peter-hook.toml` files for different changed files), peter-hook executes them sequentially with fail-fast semantics:
 
 **Execution Order:**
 1. Groups are processed in the order they are resolved (typically by file path)
@@ -344,9 +344,9 @@ When multiple config groups are involved (different `hooks.toml` files for diffe
 **Example Scenario:**
 ```
 Changed files:
-  - backend/api.rs      → Config Group A (backend/hooks.toml)
-  - frontend/app.tsx    → Config Group B (frontend/hooks.toml)
-  - docs/README.md      → Config Group C (docs/hooks.toml)
+  - backend/api.rs      → Config Group A (backend/.peter-hook.toml)
+  - frontend/app.tsx    → Config Group B (frontend/.peter-hook.toml)
+  - docs/README.md      → Config Group C (docs/.peter-hook.toml)
 
 Execution flow:
   Group A (backend): Run hooks → SUCCESS ✓
@@ -375,9 +375,9 @@ Template variables use `{VARIABLE_NAME}` syntax and can be used in:
 - `workdir` field (working directory paths)
 
 **Available template variables:**
-- `{HOOK_DIR}` - Directory containing the hooks.toml file
+- `{HOOK_DIR}` - Directory containing the .peter-hook.toml file
 - `{REPO_ROOT}` - Git repository root directory
-- `{PROJECT_NAME}` - Name of the directory containing hooks.toml
+- `{PROJECT_NAME}` - Name of the directory containing .peter-hook.toml
 - `{HOME_DIR}` - User's home directory (from $HOME)
 - `{PATH}` - Current PATH environment variable
 - `{WORKING_DIR}` - Current working directory

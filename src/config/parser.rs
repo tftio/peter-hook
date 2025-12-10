@@ -11,7 +11,7 @@ use std::{
 
 use crate::config::GlobalConfig;
 
-/// Represents a hook configuration file (hooks.toml)
+/// Represents a hook configuration file (.peter-hook.toml)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HookConfig {
     /// Individual hook definitions
@@ -146,7 +146,7 @@ impl HookGroup {
 }
 
 impl HookConfig {
-    /// Parse a hooks.toml file from the given path
+    /// Parse a .peter-hook.toml file from the given path
     ///
     /// # Errors
     ///
@@ -156,7 +156,7 @@ impl HookConfig {
         Self::from_file_internal(path.as_ref(), &mut visited, None)
     }
 
-    /// Parse a hooks.toml file and collect import diagnostics
+    /// Parse a .peter-hook.toml file and collect import diagnostics
     ///
     /// # Errors
     ///
@@ -403,7 +403,7 @@ impl HookConfig {
         })
     }
 
-    /// Parse a hooks.toml configuration from a string
+    /// Parse a .peter-hook.toml configuration from a string
     ///
     /// # Errors
     ///
@@ -683,7 +683,7 @@ modifies_repository = true
         // Simulate git repo root
         std::fs::create_dir_all(dir.join(".git")).unwrap();
         let lib = dir.join("hooks.lib.toml");
-        let base = dir.join("hooks.toml");
+        let base = dir.join(".peter-hook.toml");
 
         fs::write(
             &lib,
@@ -768,7 +768,7 @@ includes = ["common", "lint", "test"]
         let td = TempDir::new().unwrap();
         let dir = td.path();
         std::fs::create_dir_all(dir.join(".git")).unwrap();
-        let base = dir.join("hooks.toml");
+        let base = dir.join(".peter-hook.toml");
         fs::write(&base, "imports = [\"/etc/passwd\"]\n").unwrap();
         let err = HookConfig::from_file(&base).unwrap_err();
         // Now we expect it to be rejected because it's not in home directory/allowlist
@@ -786,8 +786,8 @@ includes = ["common", "lint", "test"]
         // file outside repo
         let outside = outer_dir.join("evil.toml");
         fs::write(&outside, "[hooks.bad]\ncommand=\"echo bad\"\n").unwrap();
-        // hooks.toml at repo root trying to import ../evil.toml
-        let base = outer_dir.join("repo/hooks.toml");
+        // .peter-hook.toml at repo root trying to import ../evil.toml
+        let base = outer_dir.join("repo/.peter-hook.toml");
         fs::write(&base, "imports = [\"../evil.toml\"]\n").unwrap();
         let err = HookConfig::from_file(&base).unwrap_err();
         assert!(format!("{err:#}").contains("outside repository root"));
@@ -1120,7 +1120,7 @@ command = "echo 'default behavior'"
         fs::create_dir_all(&repo_root).unwrap();
         fs::create_dir_all(repo_root.join(".git")).unwrap();
 
-        let hooks_file = repo_root.join("hooks.toml");
+        let hooks_file = repo_root.join(".peter-hook.toml");
 
         // Try to import absolute path not in allowlist
         let toml_content = format!(
@@ -1156,7 +1156,7 @@ command = "echo test"
         fs::create_dir_all(&repo_root).unwrap();
         fs::create_dir_all(repo_root.join(".git")).unwrap();
 
-        let hooks_file = repo_root.join("hooks.toml");
+        let hooks_file = repo_root.join(".peter-hook.toml");
 
         // Test with a peter-hook directory path (this will likely fail in CI/tests
         // but demonstrates the intended usage)
@@ -1227,7 +1227,7 @@ command = "rm -rf /"
                 fs::create_dir_all(&repo_root).unwrap();
                 fs::create_dir_all(repo_root.join(".git")).unwrap();
 
-                let hooks_file = repo_root.join("hooks.toml");
+                let hooks_file = repo_root.join(".peter-hook.toml");
                 let toml_content = format!(
                     r#"
 imports = ["{}"]
@@ -1276,7 +1276,7 @@ command = "echo shared"
         .unwrap();
 
         // Create main config with relative import
-        let hooks_file = repo_root.join("hooks.toml");
+        let hooks_file = repo_root.join(".peter-hook.toml");
         fs::write(
             &hooks_file,
             r#"
@@ -1342,7 +1342,7 @@ includes = ["lint"]
         let td = TempDir::new().unwrap();
         let dir = td.path();
         std::fs::create_dir_all(dir.join(".git")).unwrap();
-        let config_file = dir.join("hooks.toml");
+        let config_file = dir.join(".peter-hook.toml");
 
         fs::write(
             &config_file,

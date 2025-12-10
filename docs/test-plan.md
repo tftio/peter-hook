@@ -168,7 +168,7 @@ timeout_seconds = 600  # Override default: 10 minutes
 
 1. **Deep Hierarchy (10 levels)** - 520ms (limit: 2s) ✅
    - 10-level nested directory structure
-   - Each level has its own hooks.toml
+   - Each level has its own .peter-hook.toml
    - Hierarchical resolution performance
 
 2. **Large File Set (1000 files)** - 35ms execution (limit: 5s) ✅

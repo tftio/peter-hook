@@ -110,7 +110,7 @@ fn check_configuration() -> Vec<DoctorCheck> {
                     if hook_names.is_empty() {
                         checks.push(DoctorCheck::fail(
                             "Hook configuration",
-                            "No hooks or groups defined in hooks.toml",
+                            "No hooks or groups defined in .peter-hook.toml",
                         ));
                     } else {
                         checks.push(DoctorCheck::pass(format!(
@@ -130,7 +130,7 @@ fn check_configuration() -> Vec<DoctorCheck> {
         Ok(None) => {
             checks.push(DoctorCheck::fail(
                 "Configuration file",
-                "No hooks.toml found - create one to configure peter-hook",
+                "No .peter-hook.toml found - create one to configure peter-hook",
             ));
         }
         Err(e) => {

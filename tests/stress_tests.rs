@@ -61,7 +61,7 @@ fn test_deep_hierarchy_10_levels() {
     let temp_dir = setup_test_repo();
     let repo_path = temp_dir.path();
 
-    // Create 10-level deep directory structure with hooks.toml at each level
+    // Create 10-level deep directory structure with .peter-hook.toml at each level
     let mut current_path = repo_path.to_path_buf();
     for level in 0..10 {
         current_path = current_path.join(format!("level{level}"));
@@ -80,7 +80,7 @@ includes = ["hook-level-{level}"]
 description = "Hooks at level {level}"
 "#
         );
-        fs::write(current_path.join("hooks.toml"), config).unwrap();
+        fs::write(current_path.join(".peter-hook.toml"), config).unwrap();
     }
 
     // Create and stage a file at the deepest level
@@ -143,7 +143,7 @@ timeout_seconds = 30
 includes = ["file-counter"]
 description = "File processing"
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create 1000 text files in nested directories
     let start_creation = Instant::now();
@@ -235,7 +235,7 @@ execution_strategy = "parallel"
     )
     .unwrap();
 
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -324,7 +324,7 @@ execution_strategy = "sequential"
     )
     .unwrap();
 
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -401,7 +401,7 @@ description = "Multiple groups"
 "#,
     );
 
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Measure validate command performance
     let start = Instant::now();
@@ -470,7 +470,7 @@ execution_strategy = "parallel"
     )
     .unwrap();
 
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Just validate the config (don't execute to save time)
     let start = Instant::now();
@@ -535,7 +535,7 @@ timeout_seconds = 30
 [groups.pre-commit]
 includes = ["tree-walker"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Stage all files
     let start_stage = Instant::now();
@@ -620,7 +620,7 @@ execution_strategy = "parallel"
 "#,
     );
 
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();

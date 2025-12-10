@@ -21,7 +21,7 @@ fn test_run_with_debug_shows_extravaganza_message() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -54,7 +54,7 @@ fn test_run_dry_run_doesnt_execute() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo modified > test.txt"
@@ -101,7 +101,7 @@ fn test_run_with_many_changed_files() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check]
 command = "echo checking"
@@ -140,7 +140,7 @@ fn test_run_post_commit_uses_commit_range() {
         .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.post-commit]
 command = "echo post-commit"
@@ -177,7 +177,7 @@ fn test_run_post_merge_uses_commit_range() {
         .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.post-merge]
 command = "echo post-merge"
@@ -214,7 +214,7 @@ fn test_run_post_checkout_uses_commit_range() {
         .unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.post-checkout]
 command = "echo post-checkout"
@@ -239,7 +239,7 @@ fn test_run_commit_msg_no_file_filtering() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.commit-msg]
 command = "echo checking message"
@@ -264,7 +264,7 @@ fn test_run_prepare_commit_msg_no_file_filtering() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.prepare-commit-msg]
 command = "echo preparing"
@@ -289,7 +289,7 @@ fn test_run_pre_push_uses_push_mode() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-push]
 command = "echo pre-push"
@@ -314,7 +314,7 @@ fn test_run_unknown_event_uses_working_directory_mode() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.custom-event]
 command = "echo custom"
@@ -345,7 +345,7 @@ fn test_run_executes_hooks_and_shows_results() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo Executing hook"

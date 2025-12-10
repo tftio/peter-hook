@@ -66,7 +66,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["injection-attempt"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -111,7 +111,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["path-traversal"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -154,7 +154,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["env-leak-attempt"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -215,7 +215,7 @@ execution_type = "other"
 [groups.pre-commit]
 includes = ["file-processor"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create files with evil names (shell-quote them for filesystem)
     for name in &evil_names {
@@ -269,7 +269,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["symlink-test"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -310,7 +310,7 @@ env = { MALICIOUS_VAR = "value; rm -rf /" }
 [groups.pre-commit]
 includes = ["env-injection"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -360,7 +360,7 @@ execution_type = "other"
 [groups.pre-commit]
 includes = ["special-chars"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create files with spaces and special characters
     fs::write(repo_path.join("file with spaces.txt"), "content").unwrap();
@@ -407,7 +407,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["case-test"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -454,7 +454,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["nested"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -497,7 +497,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["unicode"]
 "#;
-    fs::write(unicode_dir.join("hooks.toml"), config).unwrap();
+    fs::write(unicode_dir.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(unicode_dir.join("test.txt"), "content").unwrap();
@@ -533,7 +533,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["null-test"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create filename with null byte (filesystem will reject or sanitize)
     let evil_name = "file\0evil.txt";
@@ -572,7 +572,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["whitelist"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();
@@ -617,7 +617,7 @@ timeout_seconds = 5
 [groups.pre-commit]
 includes = ["cmd-sub"]
 "#;
-    fs::write(repo_path.join("hooks.toml"), config).unwrap();
+    fs::write(repo_path.join(".peter-hook.toml"), config).unwrap();
 
     // Create and stage a file
     fs::write(repo_path.join("test.txt"), "content").unwrap();

@@ -24,7 +24,7 @@ fn test_execute_single_hook_success() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo success"
@@ -47,7 +47,7 @@ fn test_execute_single_hook_failure() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.failing]
 command = "false"
@@ -71,7 +71,7 @@ fn test_execute_multiple_hooks_sequential() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.first]
 command = "echo first"
@@ -106,7 +106,7 @@ fn test_execute_multiple_hooks_parallel() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.first]
 command = "echo first"
@@ -137,7 +137,7 @@ fn test_execute_force_parallel() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.modifier]
 command = "echo mod"
@@ -168,7 +168,7 @@ fn test_execute_with_dependencies() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.first]
 command = "echo first"
@@ -196,7 +196,7 @@ fn test_execute_with_env_vars() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.with-env]
 command = "echo $TEST_VAR"
@@ -224,7 +224,7 @@ fn test_execute_with_run_at_root() {
     fs::create_dir(&subdir).unwrap();
 
     fs::write(
-        subdir.join("hooks.toml"),
+        subdir.join(".peter-hook.toml"),
         r#"
 [hooks.root-hook]
 command = "pwd"
@@ -248,7 +248,7 @@ fn test_execute_array_command() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.array-cmd]
 command = ["echo", "test"]
@@ -271,7 +271,7 @@ fn test_execute_in_place_execution_type() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.in-place]
 command = "echo test"
@@ -296,7 +296,7 @@ fn test_execute_other_execution_type() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.other-type]
 command = "echo {CHANGED_FILES}"
@@ -320,7 +320,7 @@ fn test_execute_captures_output() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.output]
 command = "echo test_output"
@@ -343,7 +343,7 @@ fn test_execute_nonexistent_command() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.nonexistent]
 command = "nonexistent_command_xyz_123"
@@ -370,7 +370,7 @@ fn test_execute_with_file_patterns() {
     fs::write(temp_dir.path().join("test.rs"), "fn main() {}").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.rust-check]
 command = "echo checking"
@@ -394,7 +394,7 @@ fn test_execute_with_run_always() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.always]
 command = "echo always"
@@ -418,7 +418,7 @@ fn test_execute_parallel_safe_hooks() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test1]
 command = "echo test1"
@@ -449,7 +449,7 @@ fn test_execute_mixed_modifiers() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.readonly]
 command = "echo readonly"
@@ -483,7 +483,7 @@ fn test_execute_hook_with_custom_workdir() {
     fs::create_dir(&custom_dir).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.custom-wd]
 command = "pwd"
@@ -514,7 +514,7 @@ fn test_execute_all_execution_strategies() {
 
     for (name, strategy) in strategies {
         fs::write(
-            temp_dir.path().join("hooks.toml"),
+            temp_dir.path().join(".peter-hook.toml"),
             format!(
                 r#"
 [hooks.test]
@@ -544,7 +544,7 @@ fn test_execute_hook_with_template_variables() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.template]
 command = "echo {HOOK_DIR}"
@@ -567,7 +567,7 @@ fn test_execute_returns_results_map() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"

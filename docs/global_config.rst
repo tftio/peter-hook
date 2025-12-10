@@ -48,8 +48,8 @@ With this setting enabled, you can create shared hooks in ``~/.local/peter-hook/
 
 .. code-block:: toml
 
-   # Any repository's hooks.toml
-   imports = ["/home/user/.local/peter-hook/common-hooks.toml"]
+   # Any repository's .peter-hook.toml
+   imports = ["/home/user/.local/peter-hook/common-.peter-hook.toml"]
 
    [hooks.format]
    command = "cargo fmt"
@@ -117,11 +117,11 @@ When ``allow_local = true``, you can create a personal hook library in ``~/.loca
 .. code-block:: text
 
    ~/.local/peter-hook/
-   ├── rust-hooks.toml         # Rust-specific hooks
-   ├── python-hooks.toml       # Python-specific hooks
-   └── security-hooks.toml     # Security scanning hooks
+   ├── rust-.peter-hook.toml         # Rust-specific hooks
+   ├── python-.peter-hook.toml       # Python-specific hooks
+   └── security-.peter-hook.toml     # Security scanning hooks
 
-**Example shared hook library** (``~/.local/peter-hook/rust-hooks.toml``):
+**Example shared hook library** (``~/.local/peter-hook/rust-.peter-hook.toml``):
 
 .. code-block:: toml
 
@@ -147,8 +147,8 @@ When ``allow_local = true``, you can create a personal hook library in ``~/.loca
 
 .. code-block:: toml
 
-   # hooks.toml in any Rust project
-   imports = ["/home/user/.local/peter-hook/rust-hooks.toml"]
+   # .peter-hook.toml in any Rust project
+   imports = ["/home/user/.local/peter-hook/rust-.peter-hook.toml"]
 
    [groups.pre-commit]
    includes = ["rust-fmt", "rust-clippy", "rust-test"]

@@ -15,7 +15,7 @@ fn test_list_shows_detailed_hook_info() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test1]
 command = "echo test1"
@@ -74,7 +74,7 @@ fn test_list_shows_managed_vs_custom() {
 
     // Create managed hook via install
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.managed]
 command = "echo managed"

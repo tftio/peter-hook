@@ -1,7 +1,7 @@
 Quickstart
 ==========
 
-1. Create ``hooks.toml`` in your repo (or subdirectory):
+1. Create ``.peter-hook.toml`` in your repo (or subdirectory):
 
 .. code-block:: toml
 

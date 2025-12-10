@@ -48,7 +48,7 @@ fn test_uninstall_after_install() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -139,7 +139,7 @@ fn test_uninstall_from_subdirectory() {
 
     // Install hooks first
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -173,7 +173,7 @@ fn test_uninstall_twice_idempotent() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -214,7 +214,7 @@ fn test_uninstall_multiple_hooks() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo pre-commit"
@@ -288,7 +288,7 @@ fn test_install_then_uninstall_then_install() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -352,7 +352,7 @@ fn test_uninstall_in_nested_repo() {
 
     // Install hooks
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"

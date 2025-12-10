@@ -10,7 +10,7 @@ Peter Hook enables different paths within a monorepo to have their own custom gi
 
 ## Key Features
 
-- **🏗️ Per-File Hierarchical Resolution**: Each changed file finds its nearest `hooks.toml`, enabling true monorepo patterns with path-specific validation
+- **🏗️ Per-File Hierarchical Resolution**: Each changed file finds its nearest `.peter-hook.toml`, enabling true monorepo patterns with path-specific validation
 - **⚡ Safe Parallel Execution**: Automatic parallelization of compatible hooks for 2-3x speed improvement
 - **🔗 Hook Composition**: Combine individual hooks into reusable groups with dependency management
 - **🛡️ Repository Safety**: File-modifying hooks never run simultaneously, preventing race conditions
@@ -88,7 +88,7 @@ install -m 0755 target/release/peter-hook ~/.local/bin/
 
 ### Basic Usage
 
-1. **Create a configuration file** (`hooks.toml`):
+1. **Create a configuration file** (`.peter-hook.toml`):
 
 ```toml
 # Individual hooks
@@ -197,7 +197,7 @@ parallel = true                            # Use execution = "parallel" instead
 Share and reuse hooks/groups across files, with local overrides.
 
 ```toml
-# hooks.toml (project)
+# .peter-hook.toml (project)
 imports = ["../hooks.lib.toml", ".hooks/common.toml"]
 
 [groups.pre-commit]
@@ -230,12 +230,12 @@ Peter Hook supports powerful template variables in commands, working directories
 
 #### Built-in Variables
 ```toml
-{HOOK_DIR}         # Directory containing the hooks.toml file
+{HOOK_DIR}         # Directory containing the .peter-hook.toml file
 {WORKING_DIR}      # Current working directory when hook runs
 {REPO_ROOT}        # Git repository root directory
 {HOOK_DIR_REL}     # Relative path from repo root to hook directory
 {WORKING_DIR_REL}  # Relative path from repo root to working directory
-{PROJECT_NAME}     # Name of the directory containing hooks.toml
+{PROJECT_NAME}     # Name of the directory containing .peter-hook.toml
 {HOME_DIR}         # User's home directory
 {IS_WORKTREE}      # "true" or "false" - whether running in a worktree
 {WORKTREE_NAME}    # Name of current worktree (only available in worktrees)
@@ -345,7 +345,7 @@ Git worktrees in this repository:
 Per-worktree configuration allows different branches to have different validation requirements:
 
 ```toml
-# Main repository hooks.toml - Strict validation
+# Main repository .peter-hook.toml - Strict validation
 [hooks.full-test-suite]
 command = "cargo test --all --release"
 modifies_repository = false
@@ -362,7 +362,7 @@ execution = "parallel"
 ```
 
 ```toml
-# Feature branch worktree hooks.toml - Fast iteration
+# Feature branch worktree .peter-hook.toml - Fast iteration
 [hooks.quick-test]
 command = "cargo test --lib"
 modifies_repository = false
@@ -661,7 +661,7 @@ Peter Hook implements **true per-file hierarchical resolution** where each chang
 When you run a git hook (e.g., `pre-commit`), Peter Hook:
 
 1. **Detects all changed files** from git (staged, working directory, or push range)
-2. **For each changed file**, walks up from that file's directory to find the nearest `hooks.toml`
+2. **For each changed file**, walks up from that file's directory to find the nearest `.peter-hook.toml`
 3. **Checks if that config defines the requested event** (e.g., `pre-commit`)
 4. **Falls back to parent configs** if the event isn't defined locally
 5. **Groups files** that share the same configuration
@@ -672,23 +672,23 @@ When you run a git hook (e.g., `pre-commit`), Peter Hook:
 ```
 /monorepo/
 ├── .git
-├── hooks.toml                          # Defines: pre-push
+├── .peter-hook.toml                          # Defines: pre-push
 ├── backend/
-│   ├── hooks.toml                      # Defines: pre-commit
+│   ├── .peter-hook.toml                      # Defines: pre-commit
 │   └── api/
-│       ├── hooks.toml                  # Defines: pre-push
+│       ├── .peter-hook.toml                  # Defines: pre-push
 │       └── server.rs                   # File A
 └── frontend/
     └── app.js                          # File B
 ```
 
 **Scenario: Modify `backend/api/server.rs` (File A)**
-- **pre-commit hook**: Uses `/monorepo/backend/hooks.toml` (walks up, finds first config with pre-commit)
-- **pre-push hook**: Uses `/monorepo/backend/api/hooks.toml` (nearest config defines it)
+- **pre-commit hook**: Uses `/monorepo/backend/.peter-hook.toml` (walks up, finds first config with pre-commit)
+- **pre-push hook**: Uses `/monorepo/backend/api/.peter-hook.toml` (nearest config defines it)
 
 **Scenario: Modify `frontend/app.js` (File B)**
-- **pre-commit hook**: Uses `/monorepo/hooks.toml` (no frontend/hooks.toml, falls back to root)
-- **pre-push hook**: Uses `/monorepo/hooks.toml` (defined at root)
+- **pre-commit hook**: Uses `/monorepo/.peter-hook.toml` (no frontend/.peter-hook.toml, falls back to root)
+- **pre-push hook**: Uses `/monorepo/.peter-hook.toml` (defined at root)
 
 **Scenario: Modify both files simultaneously**
 - Peter Hook executes hooks from **both** configs in the same commit:
@@ -702,17 +702,17 @@ If a config doesn't define the requested event, Peter Hook automatically searche
 
 ```
 /monorepo/
-├── hooks.toml                          # Defines: pre-commit, pre-push
+├── .peter-hook.toml                          # Defines: pre-commit, pre-push
 └── microservices/
-    ├── hooks.toml                      # Defines: pre-commit only
+    ├── .peter-hook.toml                      # Defines: pre-commit only
     └── auth/
         └── src/
             └── lib.rs
 ```
 
 When `microservices/auth/src/lib.rs` is modified:
-- **pre-commit**: Uses `/monorepo/microservices/hooks.toml` (found locally)
-- **pre-push**: Uses `/monorepo/hooks.toml` (falls back to parent, `microservices/hooks.toml` doesn't define it)
+- **pre-commit**: Uses `/monorepo/microservices/.peter-hook.toml` (found locally)
+- **pre-push**: Uses `/monorepo/.peter-hook.toml` (falls back to parent, `microservices/.peter-hook.toml` doesn't define it)
 
 ### Benefits
 
@@ -740,25 +740,25 @@ When `microservices/auth/src/lib.rs` is modified:
 ### Real-World Example
 
 ```toml
-# /monorepo/hooks.toml - Repository-wide safety net
+# /monorepo/.peter-hook.toml - Repository-wide safety net
 [groups.pre-push]
 includes = ["security-scan", "secret-detection"]
 execution = "parallel"
 description = "Security checks for all code"
 
-# /monorepo/backend/hooks.toml - Backend quality standards
+# /monorepo/backend/.peter-hook.toml - Backend quality standards
 [groups.pre-commit]
 includes = ["rust-format", "rust-clippy", "rust-test"]
 execution = "parallel"
 description = "Rust validation pipeline"
 
-# /monorepo/frontend/hooks.toml - Frontend quality standards
+# /monorepo/frontend/.peter-hook.toml - Frontend quality standards
 [groups.pre-commit]
 includes = ["prettier", "eslint", "jest"]
 execution = "parallel"
 description = "JavaScript validation pipeline"
 
-# /monorepo/shared/hooks.toml - Library quality standards
+# /monorepo/shared/.peter-hook.toml - Library quality standards
 [groups.pre-commit]
 includes = ["format", "lint", "test", "doc-check", "api-compat"]
 execution = "sequential"

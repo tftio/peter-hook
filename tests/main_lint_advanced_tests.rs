@@ -22,7 +22,7 @@ fn test_lint_with_debug_shows_file_list() {
     }
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check]
 command = "echo checking"
@@ -48,7 +48,7 @@ fn test_lint_with_group_shows_hook_count() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.a]
 command = "echo a"
@@ -83,7 +83,7 @@ fn test_lint_shows_config_path() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -110,7 +110,7 @@ fn test_lint_dry_run_shows_what_would_run() {
     fs::write(temp_dir.path().join("test.rs"), "fn main() {}").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.rust-check]
 command = "cargo clippy"
@@ -145,7 +145,7 @@ fn test_lint_nonexistent_hook_shows_error() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.existing]
 command = "echo test"
@@ -173,7 +173,7 @@ fn test_lint_no_files_match_pattern() {
     fs::write(temp_dir.path().join("test.txt"), "content").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.rust-check]
 command = "echo checking rust"
@@ -199,7 +199,7 @@ fn test_lint_hierarchical_config() {
 
     // Root config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.root]
 command = "echo root"
@@ -212,7 +212,7 @@ modifies_repository = false
     let subdir = temp_dir.path().join("sub");
     fs::create_dir(&subdir).unwrap();
     fs::write(
-        subdir.join("hooks.toml"),
+        subdir.join(".peter-hook.toml"),
         r#"
 [hooks.nested]
 command = "echo nested"
@@ -245,7 +245,7 @@ fn test_lint_execution_types() {
 
     for (name, exec_type) in execution_types {
         fs::write(
-            temp_dir.path().join("hooks.toml"),
+            temp_dir.path().join(".peter-hook.toml"),
             format!(
                 r#"
 [hooks.test]

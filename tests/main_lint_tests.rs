@@ -14,7 +14,7 @@ fn test_lint_basic_execution() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -39,7 +39,7 @@ fn test_lint_without_git_repo() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -64,7 +64,7 @@ fn test_lint_with_dry_run() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -89,7 +89,7 @@ fn test_lint_nonexistent_hook() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -117,7 +117,7 @@ fn test_lint_with_file_patterns() {
     fs::write(temp_dir.path().join("test.rs"), "fn main() {}").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.rust-check]
 command = "echo checking"
@@ -155,7 +155,7 @@ fn test_lint_with_debug_flag() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -181,7 +181,7 @@ fn test_lint_in_git_repo() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -205,7 +205,7 @@ fn test_lint_with_group() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.a]
 command = "echo a"
@@ -240,7 +240,7 @@ fn test_lint_discovers_files() {
     fs::write(temp_dir.path().join("file2.txt"), "content").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -277,7 +277,7 @@ fn test_lint_respects_gitignore() {
     fs::write(temp_dir.path().join("test.txt"), "not ignored").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -317,7 +317,7 @@ fn test_lint_exit_codes() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"

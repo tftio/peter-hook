@@ -18,7 +18,7 @@ fn test_find_config_file_exists() {
     let temp_dir = TempDir::new().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -50,7 +50,7 @@ fn test_find_config_file_in_parent() {
 
     // Create config in parent
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -77,7 +77,7 @@ fn test_resolve_hook_by_name() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -102,7 +102,7 @@ fn test_resolve_nonexistent_hook() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -125,7 +125,7 @@ fn test_resolve_hook_group() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.a]
 command = "echo a"
@@ -158,7 +158,7 @@ fn test_resolve_with_file_filtering() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -184,7 +184,7 @@ fn test_resolve_for_lint_mode() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -209,7 +209,7 @@ fn test_resolve_for_lint_with_file_patterns() {
     fs::write(temp_dir.path().join("test.rs"), "fn main() {}").unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -232,7 +232,7 @@ fn test_resolve_for_lint_nonexistent_hook() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -254,7 +254,7 @@ fn test_resolver_from_nested_directory() {
 
     // Root config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -280,7 +280,7 @@ fn test_resolve_hook_with_dependencies() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.first]
 command = "echo first"
@@ -307,7 +307,7 @@ fn test_resolve_multiple_hooks_same_event() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"

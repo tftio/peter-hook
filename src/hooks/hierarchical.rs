@@ -1,7 +1,7 @@
 //! Hierarchical hook resolution for monorepos
 //!
 //! This module implements per-file hook resolution where each changed file
-//! finds its nearest hooks.toml and uses that configuration. This enables
+//! finds its nearest .peter-hook.toml and uses that configuration. This enables
 //! monorepo-style setups where different subdirectories have different quality
 //! gates.
 
@@ -28,9 +28,9 @@ pub struct ConfigGroup {
     pub resolved_hooks: ResolvedHooks,
 }
 
-/// Find all hooks.toml files for a given file path from nearest to root
+/// Find all .peter-hook.toml files for a given file path from nearest to root
 ///
-/// Walks up from the file's directory to collect all hooks.toml files.
+/// Walks up from the file's directory to collect all .peter-hook.toml files.
 /// Stops at the repository root.
 ///
 /// # Arguments
@@ -60,7 +60,7 @@ fn find_all_configs_for_file(file_path: &Path, repo_root: &Path) -> Vec<PathBuf>
     };
 
     loop {
-        let config_path = current.join("hooks.toml");
+        let config_path = current.join(".peter-hook.toml");
         if config_path.exists() {
             configs.push(config_path);
         }
@@ -282,7 +282,7 @@ fn merge_configs_for_event(config_paths: &[PathBuf], event: &str) -> Result<Opti
 ///
 /// # Arguments
 ///
-/// * `nearest_config_path` - Path to the nearest hooks.toml file
+/// * `nearest_config_path` - Path to the nearest .peter-hook.toml file
 /// * `event` - The git hook event (e.g., "pre-commit")
 /// * `repo_root` - The repository root
 /// * `changed_files` - Optional list of changed files for filtering
@@ -377,10 +377,10 @@ fn resolve_event_for_config(
     }))
 }
 
-/// Group changed files by their nearest hooks.toml configuration
+/// Group changed files by their nearest .peter-hook.toml configuration
 ///
 /// This is the main entry point for hierarchical resolution. For each changed
-/// file, it finds the nearest hooks.toml that defines the requested event, then
+/// file, it finds the nearest .peter-hook.toml that defines the requested event, then
 /// groups files that share the same configuration.
 ///
 /// # Arguments
@@ -634,7 +634,7 @@ mod tests {
 
         // Create config at root
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.test]
 command = "echo root"
@@ -644,7 +644,7 @@ command = "echo root"
 
         // Create config in src
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.test]
 command = "echo src"
@@ -656,14 +656,14 @@ command = "echo src"
         let file = repo_root.join("src/subdir/file.rs");
         let configs = find_all_configs_for_file(&file, repo_root);
         assert_eq!(configs.len(), 2);
-        assert_eq!(configs[0], repo_root.join("src/hooks.toml"));
-        assert_eq!(configs[1], repo_root.join("hooks.toml"));
+        assert_eq!(configs[0], repo_root.join("src/.peter-hook.toml"));
+        assert_eq!(configs[1], repo_root.join(".peter-hook.toml"));
 
-        // File at root should find only root hooks.toml
+        // File at root should find only root .peter-hook.toml
         let file = repo_root.join("root.rs");
         let configs = find_all_configs_for_file(&file, repo_root);
         assert_eq!(configs.len(), 1);
-        assert_eq!(configs[0], repo_root.join("hooks.toml"));
+        assert_eq!(configs[0], repo_root.join(".peter-hook.toml"));
     }
 
     #[test]
@@ -675,7 +675,7 @@ command = "echo src"
 
         // Root defines pre-commit with format and lint
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.format]
 command = "cargo fmt"
@@ -694,7 +694,7 @@ execution = "parallel"
 
         // Child adds test to pre-commit
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.test]
 command = "cargo test"
@@ -709,8 +709,8 @@ execution = "parallel"
 
         // Merge should include format, lint, and test
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -731,7 +731,7 @@ execution = "parallel"
 
         // Root uses parallel
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.format]
 command = "cargo fmt"
@@ -746,7 +746,7 @@ execution = "parallel"
 
         // Child uses sequential
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.test]
 command = "cargo test"
@@ -761,8 +761,8 @@ execution = "sequential"
 
         // Merged should be sequential (most conservative)
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -783,7 +783,7 @@ execution = "sequential"
 
         // Root defines lint with one command
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.lint]
 command = "cargo clippy"
@@ -797,7 +797,7 @@ includes = ["lint"]
 
         // Child redefines lint with different command
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.lint]
 command = "cargo clippy --all-targets"
@@ -811,8 +811,8 @@ includes = ["lint"]
 
         // Merged should use child's lint definition (nearest wins)
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -837,7 +837,7 @@ includes = ["lint"]
 
         // Root defines format
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.format]
 command = "cargo fmt"
@@ -851,7 +851,7 @@ includes = ["format"]
 
         // Child defines completely different hooks
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.test]
 command = "cargo test"
@@ -865,8 +865,8 @@ includes = ["test"]
 
         // Merged should include both hooks
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -886,7 +886,7 @@ includes = ["test"]
 
         // Root defines lint hook with file patterns
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.lint]
 command = "cargo clippy"
@@ -901,7 +901,7 @@ includes = ["lint"]
 
         // Child includes lint but doesn't redefine it
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.test]
 command = "cargo test"
@@ -915,8 +915,8 @@ includes = ["lint", "test"]
 
         // Merged should use parent's lint definition
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -949,7 +949,7 @@ includes = ["lint", "test"]
 
         // Root defines lint with many properties
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.lint]
 command = "cargo clippy"
@@ -964,7 +964,7 @@ includes = ["lint"]
 
         // Child redefines with minimal config
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.lint]
 command = "cargo clippy --all-targets"
@@ -977,8 +977,8 @@ includes = ["lint"]
         .unwrap();
 
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -1007,7 +1007,7 @@ includes = ["lint"]
 
         // Root level
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.format]
 command = "cargo fmt"
@@ -1021,7 +1021,7 @@ includes = ["format"]
 
         // Middle level
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [hooks.lint]
 command = "cargo clippy"
@@ -1035,7 +1035,7 @@ includes = ["lint"]
 
         // Deepest level
         fs::write(
-            repo_root.join("src/backend/hooks.toml"),
+            repo_root.join("src/backend/.peter-hook.toml"),
             r#"
 [hooks.test]
 command = "cargo test"
@@ -1049,9 +1049,9 @@ includes = ["test"]
 
         // Should merge all three levels
         let configs = vec![
-            repo_root.join("src/backend/hooks.toml"),
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/backend/.peter-hook.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -1073,7 +1073,7 @@ includes = ["test"]
 
         // Root defines lint but doesn't include it in group
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.lint]
 command = "cargo clippy"
@@ -1091,7 +1091,7 @@ includes = ["format"]
 
         // Child includes lint (which parent didn't include)
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r#"
 [groups.pre-commit]
 includes = ["lint"]
@@ -1100,8 +1100,8 @@ includes = ["lint"]
         .unwrap();
 
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()
@@ -1131,7 +1131,7 @@ includes = ["lint"]
 
         // Root has hooks
         fs::write(
-            repo_root.join("hooks.toml"),
+            repo_root.join(".peter-hook.toml"),
             r#"
 [hooks.format]
 command = "cargo fmt"
@@ -1145,7 +1145,7 @@ includes = ["format"]
 
         // Child has empty includes but still defines the group
         fs::write(
-            repo_root.join("src/hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
             r"
 [groups.pre-commit]
 includes = []
@@ -1154,8 +1154,8 @@ includes = []
         .unwrap();
 
         let configs = vec![
-            repo_root.join("src/hooks.toml"),
-            repo_root.join("hooks.toml"),
+            repo_root.join("src/.peter-hook.toml"),
+            repo_root.join(".peter-hook.toml"),
         ];
         let merged = merge_configs_for_event(&configs, "pre-commit")
             .unwrap()

@@ -16,7 +16,7 @@ fn test_install_in_empty_git_repo() {
 
     // Create simple config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -45,7 +45,7 @@ fn test_install_with_force_flag() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -73,7 +73,7 @@ fn test_install_with_shared_strategy() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -102,7 +102,7 @@ fn test_install_with_per_worktree_strategy() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -131,7 +131,7 @@ fn test_install_with_detect_strategy() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -193,7 +193,7 @@ fn test_install_outside_git_repo_fails() {
 fn test_install_without_config() {
     let temp_dir = TempDir::new().unwrap();
     Git2Repository::init(temp_dir.path()).unwrap();
-    // No hooks.toml file
+    // No .peter-hook.toml file
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -201,7 +201,7 @@ fn test_install_without_config() {
         .output()
         .expect("Failed to execute");
 
-    // May succeed or fail depending on whether hooks.toml is required
+    // May succeed or fail depending on whether .peter-hook.toml is required
     assert!(output.status.code().is_some());
 }
 
@@ -211,7 +211,7 @@ fn test_install_creates_hooks_directory() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo test"
@@ -236,7 +236,7 @@ fn test_install_with_multiple_hooks() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo pre-commit"
@@ -271,7 +271,7 @@ fn test_install_with_hook_group() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.format]
 command = "cargo fmt"
@@ -305,7 +305,7 @@ fn test_install_output_contains_summary() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -342,7 +342,7 @@ fn test_install_twice_without_force() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -376,7 +376,7 @@ fn test_install_with_complex_config() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.format]
 command = "cargo fmt"
@@ -430,7 +430,7 @@ fn test_install_with_invalid_config_fails() {
 
     // Create truly invalid TOML (syntax error)
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.broken
 # Unclosed bracket
@@ -457,7 +457,7 @@ fn test_install_preserves_existing_managed_hooks() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -489,7 +489,7 @@ fn test_install_with_env_vars_in_config() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -517,7 +517,7 @@ fn test_install_with_working_dir_in_config() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -545,7 +545,7 @@ fn test_install_default_worktree_strategy() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -578,7 +578,7 @@ fn test_install_in_subdirectory() {
 
     // Create config in root
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -606,7 +606,7 @@ fn test_install_with_template_variables() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo {HOOK_DIR}"
@@ -633,7 +633,7 @@ fn test_install_with_run_at_root() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -661,7 +661,7 @@ fn test_install_with_run_always() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -689,7 +689,7 @@ fn test_install_exit_code_on_success() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"

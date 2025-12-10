@@ -22,7 +22,7 @@ fn test_run_pre_commit_with_real_execution() {
 
     // Create hook config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.pre-commit]
 command = "echo Running pre-commit"
@@ -55,7 +55,7 @@ fn test_run_with_actual_file_filtering() {
 
     // Create hook that only targets Rust files
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.rust-check]
 command = "echo Checking Rust files"
@@ -82,7 +82,7 @@ fn test_run_with_hierarchical_configs() {
 
     // Root config
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.root]
 command = "echo root"
@@ -95,7 +95,7 @@ modifies_repository = false
     let subdir = temp_dir.path().join("subdir");
     fs::create_dir(&subdir).unwrap();
     fs::write(
-        subdir.join("hooks.toml"),
+        subdir.join(".peter-hook.toml"),
         r#"
 [hooks.nested]
 command = "echo nested"
@@ -128,7 +128,7 @@ fn test_run_shows_no_hooks_message() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     // Empty config
-    fs::write(temp_dir.path().join("hooks.toml"), "").unwrap();
+    fs::write(temp_dir.path().join(".peter-hook.toml"), "").unwrap();
 
     let output = Command::new(bin_path())
         .current_dir(temp_dir.path())
@@ -162,7 +162,7 @@ fn test_run_all_supported_hook_types() {
 
     for hook_type in hook_types {
         fs::write(
-            temp_dir.path().join("hooks.toml"),
+            temp_dir.path().join(".peter-hook.toml"),
             format!(
                 r#"
 [hooks.{hook_type}]
@@ -193,7 +193,7 @@ fn test_run_with_failing_hook_propagates_error() {
     Git2Repository::init(temp_dir.path()).unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.failing]
 command = "exit 1"
@@ -224,7 +224,7 @@ fn test_run_debug_mode_shows_extra_output() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.test]
 command = "echo test"
@@ -267,7 +267,7 @@ fn test_run_with_multiple_changed_files() {
     index.write().unwrap();
 
     fs::write(
-        temp_dir.path().join("hooks.toml"),
+        temp_dir.path().join(".peter-hook.toml"),
         r#"
 [hooks.check]
 command = "echo checking files"

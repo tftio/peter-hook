@@ -6,7 +6,7 @@ Peter Hook enables different paths within a monorepo to have their own custom gi
 Key Features
 ------------
 
-- Hierarchical configuration: nearest ``hooks.toml`` file wins
+- Hierarchical configuration: nearest ``.peter-hook.toml`` file wins
 - Safe parallel execution: repository-modifying hooks never run concurrently
 - Hook composition: reusable groups with execution strategies
 - File targeting: run hooks only when matching files change

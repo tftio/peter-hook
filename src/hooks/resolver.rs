@@ -68,7 +68,7 @@ impl HookResolver {
         }
     }
 
-    /// Find the nearest hooks.toml file by walking up the directory tree
+    /// Find the nearest .peter-hook.toml file by walking up the directory tree
     ///
     /// # Errors
     ///
@@ -77,7 +77,7 @@ impl HookResolver {
         let mut current = self.current_dir.as_path();
 
         loop {
-            let config_path = current.join("hooks.toml");
+            let config_path = current.join(".peter-hook.toml");
             if config_path.exists() {
                 return Ok(Some(config_path));
             }
@@ -621,7 +621,7 @@ mod tests {
     use tempfile::TempDir;
 
     fn create_test_config(dir: &Path, content: &str) -> PathBuf {
-        let config_path = dir.join("hooks.toml");
+        let config_path = dir.join(".peter-hook.toml");
         std::fs::write(&config_path, content).unwrap();
         config_path
     }
@@ -641,7 +641,7 @@ mod tests {
         let resolver = HookResolver::new(&nested);
         let config_path = resolver.find_config_file().unwrap().unwrap();
 
-        assert_eq!(config_path, root.join("projects/hooks.toml"));
+        assert_eq!(config_path, root.join("projects/.peter-hook.toml"));
     }
 
     #[test]

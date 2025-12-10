@@ -18,7 +18,7 @@ All tests pass with excellent performance characteristics:
 
 ### 1. Deep Hierarchy Resolution (10 Levels)
 **Test**: `test_deep_hierarchy_10_levels`
-- **Setup**: 10-level nested directory structure, each with hooks.toml
+- **Setup**: 10-level nested directory structure, each with .peter-hook.toml
 - **Behavior**: Nearest configuration wins (hierarchical resolution)
 - **Result**: ~520ms
 - **Limit**: 2 seconds
