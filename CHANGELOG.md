@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.0.0] - 2025-12-10
+
+### BREAKING CHANGES
+
+- **Configuration file renamed from `hooks.toml` to `.peter-hook.toml`**
+  - Peter-hook now searches for `.peter-hook.toml` instead of `hooks.toml`
+  - If `hooks.toml` files are detected, peter-hook will error and refuse to run
+  - Migration: Rename all `hooks.toml` files to `.peter-hook.toml`
+  - Commands affected: All commands except `version` and `license`
+
+**Migration guide:**
+
+For single configuration:
+```bash
+mv hooks.toml .peter-hook.toml
+```
+
+For monorepos with multiple configurations:
+```bash
+# Find all deprecated files
+find . -name "hooks.toml" -type f
+
+# Rename each one
+cd backend && mv hooks.toml .peter-hook.toml
+cd ../frontend && mv hooks.toml .peter-hook.toml
+```
+
+**Why this change:**
+- Follows dotfile conventions for tool configuration
+- Reduces visual clutter in repository root
+- Makes the file more discoverable as tool-specific config
+- Aligns with modern CLI tool practices
+
 ## [Unreleased]
 
 ### Added
