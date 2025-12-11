@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a git hooks manager designed for monorepos, allowing individual paths within a monorepo to have custom hooks. The system supports hierarchical hook definitions with TOML configuration files and safe parallel execution.
+This is a git hooks manager designed for monorepos, allowing individual paths within a monorepo to have custom hooks. The system supports per-directory hook definitions with TOML configuration files and safe parallel execution. Each directory uses its own nearest `hooks.toml` configuration independently, without inheriting from parent directories.
 
 ## Development Commands
 
@@ -92,7 +92,7 @@ just bump-version patch     # Bump version only (no release)
 - **CLI Interface** (`src/cli/mod.rs`): Command-line interface
 
 ### Key Features
-- **Hierarchical Configuration**: Nearest `hooks.toml` file wins
+- **Per-Directory Configuration**: Each directory uses its nearest `hooks.toml` file independently (no inheritance from parents)
 - **Safe Parallel Execution**: Repository-modifying hooks run sequentially, read-only hooks run in parallel
 - **Hook Groups**: Combine individual hooks with execution strategies
 - **Cross-platform**: Rust implementation supporting macOS, Linux, Windows
@@ -327,7 +327,7 @@ Partial stderr: WARNING: Test database cleanup incomplete
 
 - Hook scripts run from their configuration file directory by default (NOT git root)
 - Use `run_at_root = true` to override this behavior and run at the repository root
-- Hierarchical resolution: child directories override parent configurations
+- Per-directory resolution: each directory uses its nearest `hooks.toml` independently without inheriting from parents
 - Thread-safe parallel execution with proper error handling
 - Backward compatibility maintained for deprecated `parallel` field in groups
 
